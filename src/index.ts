@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
 import neo4j, { Driver } from "neo4j-driver";
 
+import searchDirectory from "utils/searchDirectory.js";
+import SchemaParser from "parser/schema.js";
+
 export default class OGM {
   private _driver: Driver;
   private database: string;
@@ -30,6 +33,10 @@ export default class OGM {
     // Import all the models, schemas
 
     this.database = database;
+
+    // Generate the schema
+    const schema = this.getSchemaFile();
+    console.log(schema);
   }
 
   /**
@@ -75,6 +82,16 @@ export default class OGM {
     }, {} as { [key: string]: string });
 
     return new OGM(connectionString, database, username, password, config);
+  }
+
+  private getSchemaFile(): string {
+    const schemaPath = searchDirectory(process.cwd());
+
+    if (!schemaPath) {
+      throw new Error("Schema file not found");
+    }
+
+    return new SchemaParser(schemaPath).parse();
   }
 
   /**
