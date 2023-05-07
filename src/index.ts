@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 import neo4j, { Driver } from "neo4j-driver";
 
-import searchDirectory from "utils/searchDirectory.js";
-import SchemaParser from "parser/schema.js";
+import SchemaParser from "./parser/schema.js";
+import { searchDirectory } from "./utils/searchDirectory.js";
 
 export default class OGM {
-  private _driver: Driver;
-  private database: string;
+  #driver: Driver;
+  #database: string;
 
   /**
    * @description
@@ -29,13 +29,18 @@ export default class OGM {
   ) {
     const auth = neo4j.auth.basic(username, password);
 
-    this._driver = neo4j.driver(connectionString, auth, config);
+    try {
+      this.#driver = neo4j.driver(connectionString, auth, config);
+    } catch (error) {
+      console.error("Error connecting to the database: ", error);
+      process.exit(-1);
+    }
     // Import all the models, schemas
 
-    this.database = database;
+    this.#database = database;
 
     // Generate the schema
-    const schema = this.getSchemaFile();
+    const schema = this._getSchemaFile();
     console.log(schema);
   }
 
@@ -55,9 +60,8 @@ export default class OGM {
       password = process.env.NEO4J_PASSWORD,
       database = process.env.NEO4J_DATABASE ?? "neo4j";
 
-    if (!username || !password) {
+    if (!username || !password)
       throw new Error("Username or password is missing");
-    }
 
     const default_settings: { [key: string]: string } = {
       NEO4J_ENCRYPTION: "encrypted",
@@ -84,22 +88,24 @@ export default class OGM {
     return new OGM(connectionString, database, username, password, config);
   }
 
-  private getSchemaFile(): string {
+  /// TODO: add a common schema interface
+  /**
+   * Get the parsed schema file.
+   *
+   * @returns The schema of the database.
+   */
+  _getSchemaFile(): string {
     const schemaPath = searchDirectory(process.cwd());
 
-    if (!schemaPath) {
-      throw new Error("Schema file not found");
-    }
+    if (!schemaPath) throw new Error("Schema file not found");
 
-    return new SchemaParser(schemaPath).parse();
+    return new SchemaParser(schemaPath).schema;
   }
 
   /**
-   * @description
    * Close the connection to the database.
-   *
    */
   close(): void {
-    this._driver.close();
+    this.#driver.close();
   }
 }
