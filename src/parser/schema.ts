@@ -20,6 +20,40 @@ export interface ISchema {
 class SchemaParser {
   #schemaFile: string;
   #tokenizedSchema: string;
+  #parsedSchema: TokenMap;
+
+  // tokens for schema ogm language
+  tokens: { [key: string]: (string | RegExp)[] } = {
+    reserved: [
+      "NODE",
+      "RELATIONSHIP",
+      "ENUM",
+      "STRING",
+      "DATE",
+      "LOCATION",
+      "RELATION",
+      "REQUIRED",
+      "OPTIONAL",
+      "SINGLE",
+      "MULTIPLE",
+      "DIRECTION_IN",
+      "DIRECTION_OUT",
+      "DIRECTION_BOTH",
+    ],
+    identifiers: [/[a-zA-Z_][a-zA-Z0-9_]*/],
+    separators: [":", ",", "{", "}", "[", "]"],
+    operators: ["@"],
+    whitespace: [" ", "\t", "\n", "\r"],
+    constants: [
+      /^'(.+?)?(?=')'$/, // single quotes string
+      /^"(.+?)?(?=")"$/, // double quotes string
+      
+      /^(\d+)$/, // integer
+    ],
+    comments: [
+      /^\/\/.*$/, // single line comment (only support '//')
+    ],
+  };
 
   /**
    * @param schemaPath The path to the schema file.
@@ -27,15 +61,9 @@ class SchemaParser {
   constructor(schemaPath: string) {
     this.#schemaFile = readFileSync(schemaPath, "utf-8");
 
-    this.#tokenizedSchema = this.#tokenizer();
-    console.debug(this.#tokenizedSchema);
-  }
-
-  #generateSchema(tokens: TokenMap): ISchema {
-    return {
-      nodesTypes: tokens.get("nodes")!,
-      relationshipsTypes: tokens.get("relationships")!,
-    };
+    this.#tokenizedSchema = this.#tokenize();
+    this.#parsedSchema = this.#parse();
+    // console.debug(this.#tokenizedSchema);
   }
 
   /**
@@ -63,7 +91,7 @@ class SchemaParser {
    * ---
    *
    * > Tokenized string
-   * Node User {
+   * RESERVED_NODE user_IDENTIFIER {
    *   id:         STRING_REQUIRED
    *   cpf:        STRING_REQUIRED
    *   email:      STRING_REQUIRED
@@ -79,67 +107,93 @@ class SchemaParser {
    *   updated_at: DATE_REQUIRED
    * }
    */
-  #tokenizer(): string {
+  #tokenize(): string {
     // split each block by Node or Relationship keyword and empty line
     const splitByBlockRegex = /(?=Node|Relationship)\s+|\n{2,}/g,
+      // split each block by Node or Relationship keyword and empty line
+      splitNodeOrRelationshipBlockRegex =
+        /(?<!\/\/.*)\b(Node|Relationship)\s+\w+\s*{(?:(?:[^{}]+|{(?:[^{}]+|{[^{}]*})*})+|\/\/[^\n]*)*}/gm,
       // match each property inside the block, until '\n'
       propertyRegex =
         /(?<property>\w+)\s*:\s*(?<type>\[?\w+\]?)\s*(?<params>(\{.*\})?|\@\w+\((\s*\w+\s*:\s*.+?\s*(?:,|$)\s*)+\))?/ms;
 
-    const tokenizedSchema = this.#schemaFile
+    const tokenizedProperties = this.#schemaFile
       .split(splitByBlockRegex)
-      .map((block) => {
+      .map((propertiesBlock) => {
         // filter block with '//' comment
-        if (block.startsWith("//")) return;
+        if (propertiesBlock.startsWith("//")) return;
         // use only properties block
-        block = block.split("\n").slice(1, -1).join("\n");
+        propertiesBlock = propertiesBlock.split("\n").slice(1, -1).join("\n");
         // remove string between '//' and '\n' (without '\n')
-        block = block.replace(/\/\/.*\n/g, "");
+        propertiesBlock = propertiesBlock.replace(/\/\/.*\n/g, "");
         // remove string between '/*' and '*/' (with '\n', until the last '*/')
-        block = block.replace(/\/\*[\s\S]*?\*\//g, "");
-
-        // TODO: set node or relationship token_name
+        propertiesBlock = propertiesBlock.replace(/\/\*[\s\S]*?\*\//g, "");
 
         // Now we see each line inside the block to tokenize each property
-        const properties = block
-          .split("\n")
-          .map((line) => {
-            // console.debug(`[l]: ${line}`);
+        return propertiesBlock.split("\n").map((line) => {
+          // console.debug(`[l]: ${line}`);
 
-            const match = propertyRegex.exec(line);
+          const match = propertyRegex.exec(line);
 
-            if (!match) {
-              console.debug(`no match: ${line}`);
-              return;
-            }
+          if (!match || !match.groups) {
+            console.debug(`no match: ${line}`);
+            return;
+          }
 
-            const { property, type, params } = (match.groups ?? {}) as {
-              property: string;
-              type: string;
-              params?: string;
-            };
+          const { property, type, params } = (match.groups ?? {}) as {
+            property: string;
+            type: string;
+            params?: string;
+          };
 
-            // console.debug(`\n[p]: ${property} [t]: ${type} [params]: ${params}`);
+          // console.debug(`\n[p]: ${property} [t]: ${type} [params]: ${params}`);
 
-            const tokenType = this.#setTokenType(type.toUpperCase()),
-              requiredOrOptional = this.#setRequiredOrOptional(type),
-              multipleOrNot = this.#setMultipleOrNot(type),
-              relationParameters = params
-                ? this.#setRelationParameters(params)
-                : undefined;
+          const tokenType = this.#setTokenType(type.toUpperCase()),
+            requiredOrOptional = this.#setRequiredOrOptional(type),
+            multipleOrNot = this.#setMultipleOrNot(type),
+            relationParameters = params
+              ? this.#setRelationParameters(params)
+              : undefined;
 
-            return `${property}: ${tokenType}${
-              requiredOrOptional ? "_" + requiredOrOptional : ""
-            }${multipleOrNot ? "_" + multipleOrNot : ""}${
-              relationParameters ? "$" + relationParameters.join("$") : ""
-            }`;
-          })
-          .filter((property) => property !== undefined);
+          const fullPropertyToken = `${property}: ${tokenType}${
+            requiredOrOptional ? "_" + requiredOrOptional : ""
+          }${multipleOrNot ? "_" + multipleOrNot : ""}${
+            relationParameters ? "$" + relationParameters.join("$") : ""
+          }`;
 
-        console.debug(properties);
-      });
+          return fullPropertyToken;
+        });
+      })
+      .filter((block) => !!block);
 
-    return tokenizedSchema.join("\n");
+    // check if as any undefined block
+    if (tokenizedProperties.includes(undefined)) {
+      const undefinedBlockIndex = tokenizedProperties.indexOf(undefined);
+      throw new Error(`Undefined block at index ${undefinedBlockIndex}`);
+    }
+
+    const splittedBlocks = this.#schemaFile.split(
+      splitNodeOrRelationshipBlockRegex
+    );
+
+    // check if splitted blocks are equal to tokenized blocks
+    if (splittedBlocks.length !== tokenizedProperties.length) {
+      console.debug(`[splittedBlocks]: ${splittedBlocks}`);
+
+      throw new Error(
+        `Splitted blocks length (${splittedBlocks.length}) is not equal to tokenized blocks length (${tokenizedProperties.length})`
+      );
+    }
+
+    // apply properties to block (node or relationship)
+    const tokenizedSchema = splittedBlocks.map((block, index) => {
+      block.replace(
+        /\{[\s\S]*?\}/,
+        (tokenizedProperties[index] as string[]).join("\n")
+      );
+    });
+
+    return tokenizedProperties.join("\n");
   }
 
   /**
@@ -224,7 +278,7 @@ class SchemaParser {
    * @internal
    */
   get schema(): string {
-    // TODO: change this
+    // TODO: change this to parsedSchema
     return this.#tokenizedSchema;
   }
 
@@ -232,40 +286,15 @@ class SchemaParser {
    * Parse the schema file and generate the schema of the database.
    * @internal
    */
-  // parse(): TokenMap {
-  //   const tokenMap: Map<"nodes" | "relationships", IToken[]> = new Map();
+  #parse(): TokenMap {
+    const tokenMap: Map<"nodes" | "relationships", IToken[]> = new Map();
 
-  //   let match: RegExpExecArray | null;
-  //   while ((match = regex.exec(this.#schemaFile)) !== null) {
-  //     const { type, name, properties } = match.groups as {
-  //         type: "Node" | "Relationship";
-  //         name: string;
-  //         properties: string;
-  //       },
-  //       newNode = { name, properties: properties.split(/\s+/) };
+    // this.#tokenizedSchema.split("\n").forEach((line) => {
+    //   console.debug(line);
+    // });
 
-  //     const handleByType = {
-  //       Node: () => {
-  //         tokenMap.set(
-  //           "nodes",
-  //           tokenMap.get("nodes")?.concat(newNode) ?? [newNode]
-  //         );
-  //       },
-  //       Relationship: () => {
-  //         tokenMap.set(
-  //           "relationships",
-  //           tokenMap.get("relationships")?.concat(newNode) ?? [newNode]
-  //         );
-  //       },
-  //     };
-
-  //     handleByType[type]();
-  //   }
-
-  //   console.debug(tokenMap.values());
-
-  //   return tokenMap;
-  // }
+    return tokenMap;
+  }
 }
 
 export default SchemaParser;
