@@ -1,0 +1,113 @@
+// Airport Database
+// ----------------
+
+Node User {
+  id:         String
+  cpf:        String
+  email:      String
+  username:   String
+  password:   String 
+  name:       String
+  rg:         String?
+  sex:        Enum { "M", "F", "X" }
+  birth_at:   Date
+  address:    Location
+  tickets:    [Ticket] @relation(name: "bought_by", direction: "in")
+  created_at: Date
+  updated_at: Date
+}
+
+Node Pilot {
+  id:         String
+  cpf:        String
+  email:      String
+  username:   String
+  password:   String
+  name:       String
+  rg:         String?
+  sex:        Enum { "M", "F", "X" }
+  birth_at:   Date
+  address:    Location
+  created_at: Date
+  updated_at: Date
+  salary:     Decimal
+  vaccination_number:           Int
+  passport_number:              Int
+  work_registration_number:     Int
+  pilot_license_number:         Int
+  co_flights:                   [Flight] @relation(name: "co_pilot")
+  flights:                      [Flight] @relation(name: "pilot")
+}
+
+Node Fly_Attendant {
+  cpf:                      String
+  name:                     String
+  last_name:                String
+  rg:                       String?
+  sex:                      String
+  birth_date:               DateTime?
+  address_cep:              String
+  address_number:           String
+  salary:                   Decimal
+  vaccination_number:       Int
+  passport_number:          Int
+  work_registration_number: Int
+  flights:                  [Flight] @relation(name: "fly_attendant")
+}
+
+Node Ticket {
+  id:    String
+  price: Decimal
+}
+
+Node Company {
+  cnpj:    String
+  name:    String
+  contact: String
+  planes:  [Plane]
+}
+
+Node Terminal {
+  id:       Int
+  capacity: Int
+  airport:  Airport
+}
+
+Node Plane {
+  id:               String
+  capacity:         Int
+  model:            String
+  manufacture_date: Date
+  company:          Company
+}
+
+Node Location {
+  id:       Int
+  name:     String
+  airports: [Airport]
+}
+
+Node Airport {
+  id:        Int
+  name:      String
+  location:  Location
+  terminals: [Terminal]
+}
+
+Node Flight {
+  id:          Int
+  departure:   Date
+  arrival:     Date
+  terminal:    Terminal
+  plane:       Plane
+  origin:      Airport
+  destination: Airport
+}
+
+// Relationships
+// -------------
+
+Relationship FlightInstance {
+  flight:  Flight
+  tickets: [Ticket] // users on the plane
+}

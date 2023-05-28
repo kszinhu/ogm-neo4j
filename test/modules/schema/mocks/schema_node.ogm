@@ -1,0 +1,15 @@
+Node User {
+  id:         String
+  cpf:        String
+  email:      String
+  username:   String
+  password:   String 
+  name:       String
+  rg:         String?
+  sex:        Enum { M, F, X }
+  birth_at:   Date
+  address:    Location
+  tickets:    [Ticket] @relation(name: "bought_by", direction: "in")
+  created_at: Date
+  updated_at: Date
+}
