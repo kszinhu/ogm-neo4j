@@ -3,7 +3,7 @@
     "ts"
   ],
   "spec": [
-    "**/*.spec.*"
+    "test/**/*.spec.ts"
   ],
   "node-option": [
     "experimental-specifier-resolution=node",

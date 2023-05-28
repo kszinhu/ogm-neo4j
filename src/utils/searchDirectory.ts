@@ -19,4 +19,4 @@ const searchDirectory = (directoryPath: string): string | undefined => {
   return undefined;
 };
 
-export { searchDirectory };
+export default searchDirectory;

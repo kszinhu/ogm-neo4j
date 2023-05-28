@@ -14,8 +14,8 @@
     "experimentalDecorators": true,
     "noImplicitAny": false,
     "esModuleInterop": true,
-    "outDir": "./dist",
-    "baseUrl": "./src"
+    "outDir": "dist",
+    "baseUrl": "src"
   },
   "include": ["src/**/*"],
   "exclude": ["./node_modules", "./test/**/*", "./dist"]

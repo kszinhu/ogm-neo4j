@@ -1,12 +1,10 @@
 import dotenv from "dotenv";
-import neo4j, { Driver } from "neo4j-driver";
+import neo4j, { Driver, Config } from "neo4j-driver";
 
-import SchemaParser from "./parser/schema.js";
-import { searchDirectory } from "./utils/searchDirectory.js";
+import { consoleMessage } from "utils";
 
 export default class OGM {
-  #driver: Driver;
-  #database: string;
+  #driver!: Driver;
 
   /**
    * @description
@@ -22,26 +20,44 @@ export default class OGM {
    */
   constructor(
     connectionString: string,
-    database: string,
     username: string,
     password: string,
-    config: object
+    config: Config
   ) {
     const auth = neo4j.auth.basic(username, password);
 
     try {
+      consoleMessage({
+        message: "[OGM] Connecting to the database...",
+        type: "info",
+      });
+
       this.#driver = neo4j.driver(connectionString, auth, config);
     } catch (error) {
-      console.error("Error connecting to the database: ", error);
-      process.exit(-1);
+      consoleMessage({
+        message: "[OGM] Error connecting to the database",
+        type: "error",
+        exit: true,
+      });
     }
-    // Import all the models, schemas
 
-    this.#database = database;
-
-    // Generate the schema
-    const schema = this._getSchemaFile();
-    console.log(schema);
+    // check if the connection is successful
+    this.#driver
+      .verifyAuthentication()
+      .then(() => {
+        consoleMessage({
+          message: "[OGM] Successfully connected to the database",
+          type: "success",
+        });
+      })
+      .catch((error) => {
+        consoleMessage({
+          message: "[OGM] Error connecting to the database",
+          type: "error",
+          exit: true,
+        });
+        process.exit(-1);
+      });
   }
 
   /**
@@ -55,10 +71,11 @@ export default class OGM {
 
     const connectionString =
         process.env.NEO4J_CONNECTION_STRING ??
-        `${process.env.NEO4J_PROTOCOL}://${process.env.NEO4J_HOST}:${process.env.NEO4J_PORT}`,
+        `${process.env.NEO4J_PROTOCOL}://${process.env.NEO4J_HOST}:${
+          process.env.NEO4J_PORT
+        }/${process.env.NEO4J_DATABASE ?? "neo4j"}`,
       username = process.env.NEO4J_USERNAME,
-      password = process.env.NEO4J_PASSWORD,
-      database = process.env.NEO4J_DATABASE ?? "neo4j";
+      password = process.env.NEO4J_PASSWORD;
 
     if (!username || !password)
       throw new Error("Username or password is missing");
@@ -85,21 +102,7 @@ export default class OGM {
       return acc;
     }, {} as { [key: string]: string });
 
-    return new OGM(connectionString, database, username, password, config);
-  }
-
-  /// TODO: add a common schema interface
-  /**
-   * Get the parsed schema file.
-   *
-   * @returns The schema of the database.
-   */
-  _getSchemaFile(): string {
-    const schemaPath = searchDirectory(process.cwd());
-
-    if (!schemaPath) throw new Error("Schema file not found");
-
-    return new SchemaParser(schemaPath).schema;
+    return new OGM(connectionString, username, password, config);
   }
 
   /**
