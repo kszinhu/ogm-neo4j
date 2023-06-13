@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import neo4j, { Driver, Config } from "neo4j-driver";
 
-import { consoleMessage } from "utils";
+import { consoleMessage } from "./utils";
 
 export default class OGM {
   #driver!: Driver;
@@ -10,13 +10,6 @@ export default class OGM {
    * @description
    * The constructor of the OGM class.
    *
-   * @param {string} connectionString - The connection string to the database.
-   * @param {string} database - The database name.
-   * @param {string} username - The username to the database.
-   * @param {string} password - The password to the database.
-   * @param {string} config - The configuration object.
-   *
-   * @returns {OGM} - The OGM instance.
    */
   constructor(
     connectionString: string,
@@ -27,37 +20,18 @@ export default class OGM {
     const auth = neo4j.auth.basic(username, password);
 
     try {
-      consoleMessage({
-        message: "[OGM] Connecting to the database...",
-        type: "info",
-      });
+      consoleMessage({ message: "[OGM] Connecting to the database..." });
 
       this.#driver = neo4j.driver(connectionString, auth, config);
+      this.#verifyConnection();
     } catch (error) {
       consoleMessage({
         message: "[OGM] Error connecting to the database",
         type: "error",
         exit: true,
+        error: error as string,
       });
     }
-
-    // check if the connection is successful
-    this.#driver
-      .verifyAuthentication()
-      .then(() => {
-        consoleMessage({
-          message: "[OGM] Successfully connected to the database",
-          type: "success",
-        });
-      })
-      .catch((error) => {
-        consoleMessage({
-          message: "[OGM] Error connecting to the database",
-          type: "error",
-          exit: true,
-        });
-        process.exit(-1);
-      });
   }
 
   /**
@@ -104,6 +78,30 @@ export default class OGM {
 
     return new OGM(connectionString, username, password, config);
   }
+
+  #verifyConnection = async () => {
+    try {
+      await this.#driver.verifyAuthentication().catch((error) => {
+        consoleMessage({
+          message: `[OGM] Error connecting to the database \n ${error}`,
+          type: "error",
+          exit: true,
+        });
+        process.exit(-1);
+      });
+
+      consoleMessage({
+        message: "[OGM] Successfully connected to the database",
+        type: "success",
+      });
+    } catch (error) {
+      consoleMessage({
+        message: `[OGM] Error connecting to the database \n ${error}`,
+        type: "error",
+        exit: true,
+      });
+    }
+  };
 
   /**
    * Close the connection to the database.

@@ -13,10 +13,18 @@ class SchemaParser extends CstParser {
   #rules = {
     schema: this.RULE("schema", () => {
       this.MANY(() => {
-        this.SUBRULE(this.#rules.nodeDeclaration);
-      });
-      this.MANY2(() => {
-        this.SUBRULE(this.#rules.relationAttribute);
+        this.OR([
+          {
+            ALT: () => {
+              this.SUBRULE(this.#rules.nodeDeclaration);
+            },
+          },
+          {
+            ALT: () => {
+              this.SUBRULE(this.#rules.relationDeclaration);
+            },
+          },
+        ]);
       });
     }),
 
@@ -26,7 +34,7 @@ class SchemaParser extends CstParser {
      * Relation as a edge between two nodes. could be directed or undirected, and could have multiple properties.
      */
     relationDeclaration: this.RULE("relationDeclaration", () => {
-      this.CONSUME(SchemaTokenizer.namedTokens.RelationReserved);
+      this.CONSUME(SchemaTokenizer.namedTokens.RelationshipReserved);
       this.CONSUME(SchemaTokenizer.namedTokens.Identifier);
       this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
       this.SUBRULE(this.#rules.relationProperties);
@@ -63,7 +71,7 @@ class SchemaParser extends CstParser {
     }),
 
     nodePropertyType: this.RULE("nodePropertyType", () => {
-      this.SUBRULE(this.#rules.anyAttribute, { LABEL: "required" });
+      this.SUBRULE(this.#rules.anyAttribute, { LABEL: "attribute" });
       this.OPTION(() => {
         this.SUBRULE(this.#rules.optionalLiteral, { LABEL: "optional" });
       });

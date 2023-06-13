@@ -109,5 +109,5 @@ Node Flight {
 
 Relationship FlightInstance {
   flight:  Flight
-  tickets: [Ticket] // users on the plane
+  tickets: [Ticket]
 }
