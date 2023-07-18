@@ -7,9 +7,7 @@ export default class OGM {
   #driver!: Driver;
 
   /**
-   * @description
    * The constructor of the OGM class.
-   *
    */
   constructor(
     connectionString: string,
@@ -35,7 +33,6 @@ export default class OGM {
   }
 
   /**
-   * @description
    * Generate instance using .env file configuration
    *
    * @returns {OGM} - The OGM instance.

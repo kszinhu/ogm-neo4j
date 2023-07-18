@@ -1,20 +1,30 @@
-import { describe, it, suite, setup } from "mocha";
+import { describe, it, setup } from "mocha";
 import { expect } from "chai";
 import SchemaParser from "../../../src/schema/parser";
 import SchemaTokenizer from "../../../src/schema/lexer";
 
 describe("Parser", () => {
-  let Tokenizer: SchemaTokenizer;
+  let tokenizer: SchemaTokenizer;
 
   setup(() => {
-    Tokenizer = new SchemaTokenizer(
+    tokenizer = new SchemaTokenizer(
       "test/modules/schema/mocks/schema_example.ogm"
     );
   });
 
   it("It must be instantiable", () => {
-    const Parser = new SchemaParser(Tokenizer.MappedTokens);
+    const parser = new SchemaParser();
 
-    expect(Parser).instanceOf(SchemaParser);
+    expect(parser).instanceOf(SchemaParser);
+  });
+
+  it("It must parse the schema file", () => {
+    const parser = new SchemaParser();
+    parser.input = tokenizer.tokenizedSchema;
+    const schema = parser.parseSchema();
+
+    expect(schema).to.be.has.property("children");
+    expect(schema.children).to.be.has.property("nodeDeclaration");
+    expect(schema.children.nodeDeclaration).to.be.has.lengthOf(10);
   });
 });

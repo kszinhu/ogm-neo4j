@@ -11,7 +11,7 @@ describe("Tokenizer", () => {
     );
 
     expect(Tokenizer).instanceOf(SchemaTokenizer);
-    expect(Tokenizer).to.have.property("MappedTokens");
+    expect(Tokenizer).to.have.property("tokenizedSchema");
   });
 
   it("Should tokenize a comment, but not include it in the result", () => {
@@ -19,8 +19,8 @@ describe("Tokenizer", () => {
       "test/modules/schema/mocks/schema_comment.ogm"
     );
 
-    expect(Tokenizer.MappedTokens).to.be.an("array");
-    expect(Tokenizer.MappedTokens).to.have.lengthOf(0);
+    expect(Tokenizer.tokenizedSchema).to.be.an("array");
+    expect(Tokenizer.tokenizedSchema).to.have.lengthOf(0);
   });
 
   it("Should tokenize a node definition", () => {
@@ -28,14 +28,14 @@ describe("Tokenizer", () => {
       "test/modules/schema/mocks/schema_node.ogm"
     );
 
-    expect(Tokenizer.MappedTokens).to.be.an("array");
-    expect(Tokenizer.MappedTokens[0]).to.have.property("image", "Node");
-    expect(Tokenizer.MappedTokens[1]).to.have.property("image", "User");
-    expect(Tokenizer.MappedTokens[2]).to.have.property("image", "{");
-    expect(Tokenizer.MappedTokens[3]).to.have.property("image", "id");
-    expect(Tokenizer.MappedTokens[4]).to.have.property("image", ":");
-    expect(Tokenizer.MappedTokens[5]).to.have.property("image", "String");
-    expect(Tokenizer.MappedTokens[46]).to.have.property("image", "@");
-    expect(Tokenizer.MappedTokens[47]).to.have.property("image", "relation");
+    expect(Tokenizer.tokenizedSchema).to.be.an("array");
+    expect(Tokenizer.tokenizedSchema[0]).to.have.property("image", "Node");
+    expect(Tokenizer.tokenizedSchema[1]).to.have.property("image", "User");
+    expect(Tokenizer.tokenizedSchema[2]).to.have.property("image", "{");
+    expect(Tokenizer.tokenizedSchema[3]).to.have.property("image", "id");
+    expect(Tokenizer.tokenizedSchema[4]).to.have.property("image", ":");
+    expect(Tokenizer.tokenizedSchema[5]).to.have.property("image", "String");
+    expect(Tokenizer.tokenizedSchema[46]).to.have.property("image", "@");
+    expect(Tokenizer.tokenizedSchema[47]).to.have.property("image", "relation");
   });
 });

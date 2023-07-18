@@ -1,5 +1,14 @@
-import { CstParser, ILexingResult } from "chevrotain";
+import { BaseParser, CstParser, ILexingResult, Rule } from "chevrotain";
 import SchemaTokenizer from "./lexer";
+import { Schema } from "zod";
+
+// { name: 'schema', children: { nodeDeclaration?: [Array], relationDeclaration?: [Array] } }
+type ParsedSchema<R extends Record<string, any>> = {
+  name: "schema";
+  children: {
+    [key in keyof R]?: R[key][];
+  };
+};
 
 /**
  * Responsible for parsing the schema file and generate the schema of the database.
@@ -10,18 +19,18 @@ class SchemaParser extends CstParser {
   /**
    * Rules for Schema Language.
    */
-  #rules = {
+  private rules = {
     schema: this.RULE("schema", () => {
       this.MANY(() => {
         this.OR([
           {
             ALT: () => {
-              this.SUBRULE(this.#rules.nodeDeclaration);
+              this.SUBRULE(this.rules.nodeDeclaration);
             },
           },
           {
             ALT: () => {
-              this.SUBRULE(this.#rules.relationDeclaration);
+              this.SUBRULE(this.rules.relationDeclaration);
             },
           },
         ]);
@@ -37,13 +46,13 @@ class SchemaParser extends CstParser {
       this.CONSUME(SchemaTokenizer.namedTokens.RelationshipReserved);
       this.CONSUME(SchemaTokenizer.namedTokens.Identifier);
       this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
-      this.SUBRULE(this.#rules.relationProperties);
+      this.SUBRULE(this.rules.relationProperties);
       this.CONSUME(SchemaTokenizer.namedTokens.ClosingBrace);
     }),
 
     relationProperties: this.RULE("relationProperties", () => {
       this.MANY(() => {
-        this.SUBRULE(this.#rules.anyAttribute);
+        this.SUBRULE(this.rules.anyAttribute);
       });
     }),
 
@@ -54,26 +63,28 @@ class SchemaParser extends CstParser {
       this.CONSUME(SchemaTokenizer.namedTokens.NodeReserved);
       this.CONSUME(SchemaTokenizer.namedTokens.Identifier);
       this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
-      this.SUBRULE(this.#rules.nodeProperties);
+      this.SUBRULE(this.rules.nodeProperties);
       this.CONSUME(SchemaTokenizer.namedTokens.ClosingBrace);
     }),
 
     nodeProperties: this.RULE("nodeProperties", () => {
       this.MANY(() => {
-        this.SUBRULE(this.#rules.nodeProperty);
+        this.SUBRULE(this.rules.nodeProperty);
       });
     }),
 
     nodeProperty: this.RULE("nodeProperty", () => {
       this.CONSUME(SchemaTokenizer.namedTokens.Identifier);
       this.CONSUME(SchemaTokenizer.namedTokens.Colon);
-      this.SUBRULE(this.#rules.nodePropertyType);
+      this.SUBRULE(this.rules.nodePropertyType);
     }),
 
     nodePropertyType: this.RULE("nodePropertyType", () => {
-      this.SUBRULE(this.#rules.anyAttribute, { LABEL: "attribute" });
+      this.SUBRULE(this.rules.anyAttribute, { LABEL: "attribute" });
       this.OPTION(() => {
-        this.SUBRULE(this.#rules.optionalLiteral, { LABEL: "optional" });
+        this.CONSUME(SchemaTokenizer.namedTokens.OptionalOperator, {
+          LABEL: "optionalQuestionMark",
+        });
       });
     }),
 
@@ -85,63 +96,63 @@ class SchemaParser extends CstParser {
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.StringLiteral, {
-              LABEL: "String_attribute",
+              LABEL: "StringAttribute",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.IntegerLiteral, {
-              LABEL: "Integer_attribute",
+              LABEL: "IntegerAttribute",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.DecimalLiteral, {
-              LABEL: "Decimal_attribute",
+              LABEL: "DecimalAttribute",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.DateLiteral, {
-              LABEL: "Date_attribute",
+              LABEL: "DateAttribute",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.DateTimeLiteral, {
-              LABEL: "DateTime_attribute",
+              LABEL: "DateTimeAttribute",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.TimeLiteral, {
-              LABEL: "Time_attribute",
+              LABEL: "TimeAttribute",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.LocationLiteral, {
-              LABEL: "Location_attribute",
+              LABEL: "LocationAttribute",
             });
           },
         },
         {
           ALT: () => {
-            this.SUBRULE(this.#rules.nodeEnum, {
-              LABEL: "node_enum_attribute",
+            this.SUBRULE(this.rules.nodeEnum, {
+              LABEL: "nodeEnumAttribute",
             });
           },
         },
         {
           ALT: () => {
-            this.SUBRULE(this.#rules.relationAttribute, {
-              LABEL: "node_relation_attribute",
+            this.SUBRULE(this.rules.relationAttribute, {
+              LABEL: "nodeRelationAttribute",
             });
           },
         },
@@ -149,41 +160,42 @@ class SchemaParser extends CstParser {
     }),
 
     relationAttributeArgs: this.RULE("relationAttributeArgs", () => {
-      this.CONSUME1(SchemaTokenizer.namedTokens.FunctionOperator);
-      this.CONSUME2(SchemaTokenizer.namedTokens.RelationReserved);
-      this.CONSUME3(SchemaTokenizer.namedTokens.OpeningParenthesis);
-      this.CONSUME4(SchemaTokenizer.namedTokens.Identifier, { LABEL: "name" });
-      this.CONSUME5(SchemaTokenizer.namedTokens.Colon);
-      this.CONSUME6(SchemaTokenizer.namedTokens.StringLiteral);
-      this.CONSUME7(SchemaTokenizer.namedTokens.Common);
-      this.CONSUME8(SchemaTokenizer.namedTokens.Identifier, {
+      this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
+      this.CONSUME(SchemaTokenizer.namedTokens.RelationReserved);
+      this.CONSUME(SchemaTokenizer.namedTokens.OpeningParenthesis);
+      this.CONSUME(SchemaTokenizer.namedTokens.RelationArgNameReserved, {
+        ERR_MSG: "Argument name must be a exist",
+      });
+      this.CONSUME(SchemaTokenizer.namedTokens.Colon);
+      this.CONSUME(SchemaTokenizer.namedTokens.Identifier, {
+        ERR_MSG: "Relation name must be a string",
+      });
+      this.CONSUME(SchemaTokenizer.namedTokens.Comma);
+      this.CONSUME(SchemaTokenizer.namedTokens.RelationArgDirectionReserved, {
+        ERR_MSG: "Argument direction must be a exist",
+      });
+      this.CONSUME2(SchemaTokenizer.namedTokens.Colon);
+      this.CONSUME2(SchemaTokenizer.namedTokens.Identifier, {
         LABEL: "direction",
       });
       this.OR([
         {
           ALT: () => {
-            this.CONSUME9(SchemaTokenizer.namedTokens.DirectionINReserved);
+            this.CONSUME(SchemaTokenizer.namedTokens.DirectionINReserved);
           },
         },
         {
           ALT: () => {
-            this.CONSUME9(SchemaTokenizer.namedTokens.DirectionOUTReserved);
+            this.CONSUME(SchemaTokenizer.namedTokens.DirectionOUTReserved);
           },
         },
         {
           ALT: () => {
-            this.CONSUME9(SchemaTokenizer.namedTokens.DirectionBOTHReserved);
+            this.CONSUME(SchemaTokenizer.namedTokens.DirectionBOTHReserved);
           },
         },
       ]);
-      this.CONSUME9(SchemaTokenizer.namedTokens.ClosingParenthesis);
-    }),
-
-    optionalLiteral: this.RULE("optionalLiteral", () => {
-      this.SUBRULE(this.#rules.anyAttribute, { LABEL: "optional_attribute" });
-      this.CONSUME(SchemaTokenizer.namedTokens.OptionalOperator, {
-        LABEL: "optional_question_mark",
-      });
+      this.CONSUME(SchemaTokenizer.namedTokens.ClosingParenthesis);
     }),
 
     optionalRelation: this.RULE("optionalRelation", () => {
@@ -201,64 +213,66 @@ class SchemaParser extends CstParser {
       this.OR([
         {
           ALT: () => {
-            this.SUBRULE(this.#rules.optionalRelation, {
-              LABEL: "optional_relation",
+            this.SUBRULE(this.rules.optionalRelation, {
+              LABEL: "optionalRelation",
             });
           },
         },
         {
           ALT: () => {
-            this.SUBRULE(this.#rules.multipleRelation, {
-              LABEL: "multiple_relation",
+            this.SUBRULE(this.rules.multipleRelation, {
+              LABEL: "multipleRelation",
             });
           },
         },
         {
           ALT: () => {
             this.CONSUME(SchemaTokenizer.namedTokens.Identifier, {
-              LABEL: "node_relation_attribute",
+              LABEL: "nodeRelationAttribute",
             });
           },
         },
       ]);
+      // optional relation attribute arguments (e.g. @relation(name: "my_relation", direction: 'out'))
+      this.OPTION(() => {
+        this.SUBRULE(this.rules.relationAttributeArgs);
+      });
     }),
 
     nodeEnum: this.RULE("nodeEnum", () => {
       this.CONSUME(SchemaTokenizer.namedTokens.EnumReserved);
-      this.CONSUME(SchemaTokenizer.namedTokens.OpeningBracket);
-      this.SUBRULE(this.#rules.nodeEnumValues);
-      this.CONSUME(SchemaTokenizer.namedTokens.ClosingBracket);
+      this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
+      this.SUBRULE(this.rules.nodeEnumValues);
+      this.CONSUME(SchemaTokenizer.namedTokens.ClosingBrace);
     }),
 
     nodeEnumValues: this.RULE("nodeEnumValues", () => {
       // catch any values inside the brackets
       this.MANY(() => {
-        this.SUBRULE(this.#rules.anyAttribute);
+        this.SUBRULE(this.rules.anyAttribute);
+        // optional comma ',' after each value
+        this.OPTION(() => {
+          this.CONSUME(SchemaTokenizer.namedTokens.Comma);
+        });
       });
     }),
-  };
+  } as const;
 
-  constructor(tokens: ILexingResult["tokens"]) {
+  constructor() {
     // instantiate the parser with the tokens from the tokenizer
     super(SchemaTokenizer.allTokens, { recoveryEnabled: true });
 
     this.performSelfAnalysis();
-
-    // introduce the tokens to the parser
-    this.input = tokens;
-
-    // set the parser's start rule
-    this.#initParser();
   }
 
-  /**
-   * Parse the schema file.
-   */
-  #initParser = () => {
-    // call the start rule
-    // @ts-ignore
-    this.schema();
-  };
+  parseSchema(): ParsedSchema<InstanceType<typeof SchemaParser>["rules"]> {
+    if (this.input.length === 0) {
+      throw new Error("No input provided");
+    }
+
+    // @ts-expect-error
+    return this.schema();
+  }
 }
 
 export default SchemaParser;

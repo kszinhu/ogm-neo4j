@@ -1,5 +1,11 @@
 import { readFileSync } from "fs";
-import { createToken, Lexer, ILexingResult } from "chevrotain";
+import {
+  createToken,
+  Lexer,
+  ILexingResult,
+  TokenType,
+  ILexerConfig,
+} from "chevrotain";
 
 /**
  * Responsible for tokenizing the schema file.
@@ -8,7 +14,7 @@ import { createToken, Lexer, ILexingResult } from "chevrotain";
  */
 class SchemaTokenizer {
   #schemaFile: string;
-  #mappedTokens: ILexingResult["tokens"];
+  #tokenizedSchema: ILexingResult["tokens"];
 
   /**
    * Tokens for Schema language.
@@ -29,6 +35,11 @@ class SchemaTokenizer {
       createToken({ name: "TimeReserved", pattern: /Time/ }),
       createToken({ name: "LocationReserved", pattern: /Location/ }),
       createToken({ name: "RelationReserved", pattern: /relation/ }),
+      createToken({ name: "RelationArgNameReserved", pattern: /name/ }),
+      createToken({
+        name: "RelationArgDirectionReserved",
+        pattern: /direction/,
+      }),
       createToken({ name: "DirectionINReserved", pattern: /in/ }),
       createToken({ name: "DirectionOUTReserved", pattern: /out/ }),
       createToken({ name: "DirectionBOTHReserved", pattern: /both/ }),
@@ -36,7 +47,7 @@ class SchemaTokenizer {
     identifiers: [createToken({ name: "Identifier", pattern: /[a-zA-Z_]\w*/ })],
     separators: [
       createToken({ name: "Colon", pattern: /:/ }),
-      createToken({ name: "Common", pattern: /,/ }),
+      createToken({ name: "Comma", pattern: /,/ }),
       createToken({ name: "OpeningBrace", pattern: /{/ }),
       createToken({ name: "ClosingBrace", pattern: /}/ }),
       createToken({ name: "OpeningBracket", pattern: /\[/ }),
@@ -113,7 +124,7 @@ class SchemaTokenizer {
       (acc, curr) => ({ ...acc, [curr.name]: curr }),
       {}
     ),
-  };
+  } as const;
 
   static allTokens = Object.values(this.tokens).reduce(
     (acc, curr: any) => acc.concat(curr),
@@ -123,21 +134,21 @@ class SchemaTokenizer {
   /**
    * @param schemaPath The path to the schema file.
    */
-  constructor(schemaPath: string, options?: {}) {
+  constructor(schemaPath: string, options?: ILexerConfig) {
     const lexerInstance = new Lexer(SchemaTokenizer.allTokens, options);
 
     // Read the schema file.
     this.#schemaFile = readFileSync(schemaPath, "utf-8");
 
     // Tokenize the schema file.
-    this.#mappedTokens = lexerInstance.tokenize(this.#schemaFile).tokens;
+    this.#tokenizedSchema = lexerInstance.tokenize(this.#schemaFile).tokens;
   }
 
   /**
-   * Get the tokens of the schema file.
+   * Get the tokenized schema file.
    */
-  get MappedTokens(): ILexingResult["tokens"] {
-    return this.#mappedTokens;
+  get tokenizedSchema(): ILexingResult["tokens"] {
+    return this.#tokenizedSchema;
   }
 }
 
