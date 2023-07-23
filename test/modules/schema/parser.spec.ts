@@ -1,30 +1,30 @@
 import { describe, it, setup } from "mocha";
 import { expect } from "chai";
-import SchemaParser from "../../../src/schema/parser";
-import SchemaTokenizer from "../../../src/schema/lexer";
+import { ApplicationParser, ApplicationLexer } from "../../../src/schema";
 
 describe("Parser", () => {
-  let tokenizer: SchemaTokenizer;
+  let tokenizer: ApplicationLexer;
 
   setup(() => {
-    tokenizer = new SchemaTokenizer(
+    tokenizer = new ApplicationLexer(
       "test/modules/schema/mocks/schema_example.ogm"
     );
   });
 
   it("It must be instantiable", () => {
-    const parser = new SchemaParser();
+    const parser = new ApplicationParser();
 
-    expect(parser).instanceOf(SchemaParser);
+    expect(parser).instanceOf(ApplicationParser);
   });
 
   it("It must parse the schema file", () => {
-    const parser = new SchemaParser();
+    const parser = new ApplicationParser({ debug: true, outputPath: "./tmp/" });
     parser.input = tokenizer.tokenizedSchema;
-    const schema = parser.parseSchema();
+    parser.parse();
 
-    expect(schema).to.be.has.property("children");
-    expect(schema.children).to.be.has.property("nodeDeclaration");
-    expect(schema.children.nodeDeclaration).to.be.has.lengthOf(10);
+    expect(parser.schema).to.be.has.property("nodes");
+    expect(parser.schema).to.be.has.property("relations");
+    expect(parser.schema).to.be.has.property("nodes").that.is.an("Map");
+    expect(parser.schema).to.be.has.property("nodes").that.has.lengthOf(10);
   });
 });

@@ -1,11 +1,5 @@
 import { readFileSync } from "fs";
-import {
-  createToken,
-  Lexer,
-  ILexingResult,
-  TokenType,
-  ILexerConfig,
-} from "chevrotain";
+import { createToken, Lexer, ILexingResult, ILexerConfig } from "chevrotain";
 
 /**
  * Responsible for tokenizing the schema file.
@@ -26,20 +20,16 @@ class SchemaTokenizer {
         name: "RelationshipReserved",
         pattern: /Relationship/,
       }),
+      createToken({ name: "BooleanReserved", pattern: /Boolean/ }),
       createToken({ name: "EnumReserved", pattern: /Enum/ }),
       createToken({ name: "StringReserved", pattern: /String/ }),
-      createToken({ name: "IntReserved", pattern: /Int/ }),
+      createToken({ name: "IntegerReserved", pattern: /Int/ }),
       createToken({ name: "DecimalReserved", pattern: /Decimal/ }),
       createToken({ name: "DateTimeReserved", pattern: /DateTime/ }),
       createToken({ name: "DateReserved", pattern: /Date/ }),
+      createToken({ name: "TimestampReserved", pattern: /Timestamp/ }),
       createToken({ name: "TimeReserved", pattern: /Time/ }),
-      createToken({ name: "LocationReserved", pattern: /Location/ }),
       createToken({ name: "RelationReserved", pattern: /relation/ }),
-      createToken({ name: "RelationArgNameReserved", pattern: /name/ }),
-      createToken({
-        name: "RelationArgDirectionReserved",
-        pattern: /direction/,
-      }),
       createToken({ name: "DirectionINReserved", pattern: /in/ }),
       createToken({ name: "DirectionOUTReserved", pattern: /out/ }),
       createToken({ name: "DirectionBOTHReserved", pattern: /both/ }),
@@ -51,7 +41,7 @@ class SchemaTokenizer {
       createToken({ name: "OpeningBrace", pattern: /{/ }),
       createToken({ name: "ClosingBrace", pattern: /}/ }),
       createToken({ name: "OpeningBracket", pattern: /\[/ }),
-      createToken({ name: "ClosingBracket", pattern: /]/ }),
+      createToken({ name: "ClosingBracket", pattern: /\]/ }),
       createToken({ name: "OpeningParenthesis", pattern: /\(/ }),
       createToken({ name: "ClosingParenthesis", pattern: /\)/ }),
     ],
@@ -130,6 +120,8 @@ class SchemaTokenizer {
     (acc, curr: any) => acc.concat(curr),
     []
   );
+
+  static relationParams = ["name", "direction"];
 
   /**
    * @param schemaPath The path to the schema file.

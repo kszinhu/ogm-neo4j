@@ -11,7 +11,7 @@ Node User {
   rg:         String?
   sex:        Enum { "M", "F", "X" }
   birth_at:   Date
-  address:    Location
+  address:    String
   tickets:    [Ticket] @relation(name: "bought_by", direction: "in")
   created_at: Date
   updated_at: Date
@@ -27,7 +27,7 @@ Node Pilot {
   rg:         String?
   sex:        Enum { "M", "F", "X" }
   birth_at:   Date
-  address:    Location
+  address:    String
   created_at: Date
   updated_at: Date
   salary:     Decimal
@@ -90,7 +90,7 @@ Node Location {
 Node Airport {
   id:        Int
   name:      String
-  location:  Location
+  address:   String
   terminals: [Terminal]
 }
 
