@@ -172,7 +172,10 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         ...attribute,
         ...((!!openingBracket && !!closingBracket && { multiple: true }) || {}),
         ...((!!optionalQuestionMark && {}) || { required: true }),
-        ...((!!relationArguments && { relation: relationArguments }) || {}),
+        ...((!!relationArguments && {
+          options: { relation: relationArguments },
+        }) ||
+          {}),
       } as Property;
     }),
 
@@ -221,7 +224,10 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         ...attribute,
         ...((!!openingBracket && !!closingBracket && { multiple: true }) || {}),
         ...((!!optionalQuestionMark && {}) || { required: true }),
-        ...((!!relationArguments && { relation: relationArguments }) || {}),
+        ...((!!relationArguments && {
+          options: { relation: relationArguments },
+        }) ||
+          {}),
       } as Property;
     }),
 
