@@ -64,13 +64,13 @@ Node Company {
   cnpj:    String
   name:    String
   contact: String
-  planes:  [Plane]
+  planes:  [Plane] @relation(name: "planes_owned", direction: "in")
 }
 
 Node Terminal {
   id:       Int
   capacity: Int
-  airport:  Airport
+  airport:  Airport @relation(direction: "out")
 }
 
 Node Plane {
@@ -78,7 +78,7 @@ Node Plane {
   capacity:         Int
   model:            String
   manufacture_date: Date
-  company:          Company
+  company:          Company @relation(name: "planes_owned", direction: "out")
 }
 
 Node Location {
@@ -100,8 +100,8 @@ Node Flight {
   arrival:     Date
   terminal:    Terminal
   plane:       Plane
-  origin:      Airport
-  destination: Airport
+  origin:      Airport @relation(direction: "out")
+  destination: Airport @relation(direction: "out")
 }
 
 // Relationships
