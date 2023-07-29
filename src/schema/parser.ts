@@ -1,29 +1,29 @@
-import { existsSync, mkdirSync, openSync, writeSync } from "fs";
-import { EmbeddedActionsParser, Rule } from "chevrotain";
+import { EmbeddedActionsParser } from "chevrotain";
 
-import type { PropertyTypes } from "types/lexer";
-import {
+import type { PropertyTypes } from "../types/lexer";
+import type {
+  NodeApp,
+  Property,
+  RelationApp,
+  SchemaOfApplication as Schema,
+  ParserConfig,
+  ParserRules,
   SchemaAppParser,
-  type NodeApp,
-  type Property,
-  type RelationApp,
-  type SchemaOfApplication as Schema,
-  type ParserConfig,
-} from "types/parser";
+} from "../types/parser";
 
 import SchemaTokenizer from "./lexer";
-import { createIfNotExists as createDebugFile } from "utils/debugFiles";
+import { createIfNotExists as createDebugFile } from "@utils/debugFiles";
 
 /**
  * Responsible for parsing the schema file and generate the schema of the database.
  *
- * Using the Chevrotain parser generator to consume the tokens from the tokenizer.
+ * Using the Chevrotain parser generator to co29/07/2023nsume the tokens from the tokenizer.
  */
 class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
   /**
    * Rules for Schema Language.
    */
-  rules: SchemaAppParser["rules"] = {
+  rules: ParserRules = {
     schemaParser: this.RULE("schemaParser", () => {
       const nodes: Schema["nodes"] = new Map(),
         relations: Schema["relations"] = new Map();
@@ -241,7 +241,30 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         { ALT: () => this.SUBRULE(this.rules.timeAttribute) },
         { ALT: () => this.SUBRULE(this.rules.enumAttribute) },
         { ALT: () => this.SUBRULE(this.rules.relationAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.booleanAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.timestampAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.localdatetimeAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.localtimeAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.pointAttribute) },
       ]);
+    }),
+
+    pointAttribute: this.RULE("pointAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.PointReserved);
+
+      return { type: "point" as PropertyTypes };
+    }),
+
+    localdatetimeAttribute: this.RULE("localdatetimeAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.LocalDatetimeReserved);
+
+      return { type: "localdatetime" as PropertyTypes };
+    }),
+
+    localtimeAttribute: this.RULE("localtimeAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.LocalTimeReserved);
+
+      return { type: "localtime" as PropertyTypes };
     }),
 
     timestampAttribute: this.RULE("timestampAttribute", () => {
@@ -374,6 +397,9 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
           args[argument.name] = argument.value;
         },
       });
+
+      if (args["direction"] === undefined && !this.RECORDING_PHASE)
+        args["direction"] = "BOTH";
 
       return args;
     }),

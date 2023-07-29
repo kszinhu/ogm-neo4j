@@ -1,5 +1,21 @@
 export type DirectionTypes = "in" | "out" | "both";
 
+export enum PropertyType {
+  integer = "integer",
+  decimal = "decimal",
+  string = "string",
+  boolean = "boolean",
+  date = "date",
+  datetime = "datetime",
+  time = "time",
+  timestamp = "timestamp",
+  relation = "relation",
+  enum = "enum",
+  localdatetime = "localdatetime",
+  localtime = "localtime",
+  point = "point",
+}
+
 export type PropertyTypes =
   | "integer"
   | "decimal"
@@ -10,7 +26,10 @@ export type PropertyTypes =
   | "time"
   | "timestamp"
   | "relation"
-  | "enum";
+  | "enum"
+  | "localdatetime"
+  | "localtime"
+  | "point";
 
 export type TokensName =
   | "NodeReserved"
@@ -22,7 +41,9 @@ export type TokensName =
   | "DateTimeReserved"
   | "DateReserved"
   | "TimeReserved"
-  | "LocationReserved"
+  | "LocaledatetimeReserved"
+  | "LocaltimeReserved"
+  | "PointReserved"
   | "RelationReserved"
   | "RelationArgNameReserved"
   | "RelationArgDirectionReserved"
@@ -50,3 +71,13 @@ export type TokensName =
   | "TimeLiteral"
   | "LocationLiteral"
   | "Comment";
+
+export interface IEnumType {
+  name: string;
+  permittedValues: string[];
+}
+
+export interface IRelationType {
+  name: string;
+  direction: DirectionTypes;
+}

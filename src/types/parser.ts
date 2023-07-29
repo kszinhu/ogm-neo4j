@@ -17,7 +17,7 @@ type EmbeddedActions = {
   [key in keyof ParserRules]: ParserRules[key];
 };
 
-interface ParserRules extends AttributesRules {
+export interface ParserRules extends AttributesRules {
   schemaParser: ParserMethod<[], SchemaOfApplication>;
   nodeDeclaration: ParserMethod<[], NodeApp>;
   relationDeclaration: ParserMethod<[], RelationApp>;
@@ -63,8 +63,10 @@ export interface SchemaOfApplication {
 }
 
 declare abstract class SchemaAppParser {
-  constructor(config?: ParserConfig);
   abstract rules: ParserRules;
-  parse: () => void;
-  schema: SchemaOfApplication | null;
+  abstract parse: () => void;
+
+  constructor(config?: ParserConfig);
 }
+
+export { SchemaAppParser };

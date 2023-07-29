@@ -1,10 +1,22 @@
 import dotenv from "dotenv";
-import neo4j, { Driver, Config } from "neo4j-driver";
+import neo4j, {
+  Driver,
+  Config,
+  SessionMode,
+  Session,
+  Transaction,
+  QueryResult,
+} from "neo4j-driver";
 
-import { consoleMessage } from "./utils";
+import { consoleMessage } from "@utils/index";
+import { Model, ModelMap } from "@models/index";
+import { QueryBuilder } from "@query/index";
+import { Schema } from "@schema/index";
 
 export default class OGM {
   #driver!: Driver;
+  models: ModelMap;
+  schema: Schema;
 
   /**
    * The constructor of the OGM class.
@@ -16,6 +28,9 @@ export default class OGM {
     config: Config
   ) {
     const auth = neo4j.auth.basic(username, password);
+
+    this.models = new ModelMap(this);
+    this.schema = new Schema(this);
 
     try {
       consoleMessage({ message: "[OGM] Connecting to the database..." });
@@ -105,5 +120,93 @@ export default class OGM {
    */
   close(): void {
     this.#driver.close();
+  }
+
+  /**
+   * Get the session of the database.
+   */
+  session(mode: SessionMode = neo4j.session.READ): Session {
+    return this.#driver.session({ defaultAccessMode: mode });
+  }
+
+  /**
+   * Get the read session of the database.
+   */
+  readSession(): Session {
+    return this.session(neo4j.session.READ);
+  }
+
+  /**
+   * Get the write session of the database.
+   */
+  writeSession(): Session {
+    return this.session(neo4j.session.WRITE);
+  }
+
+  /**
+   * Create a transaction.
+   */
+  transaction(): Transaction & { success: () => Promise<void> } {
+    const session = this.#driver.session();
+    // @ts-expect-error
+    const transaction: Transaction & { success: () => Promise<void> } =
+      session.beginTransaction();
+
+    transaction.success = async () => {
+      await transaction.commit();
+      session.close();
+    };
+
+    return transaction;
+  }
+
+  async batch(queries) {
+    const transaction = this.transaction();
+    const output: QueryResult[] = [];
+    const errors: { query: string; params: any; error: unknown }[] = [];
+
+    await Promise.all(
+      queries.map((query) => {
+        const params = "params" in query ? query.params : {};
+        query = "query" in query ? query.query : query;
+
+        try {
+          return transaction
+            .run(query, params)
+            .then((res) => {
+              output.push(res);
+            })
+            .catch((error) => {
+              errors.push({ query, params, error });
+            });
+        } catch (error: unknown) {
+          errors.push({ query, params, error });
+        }
+      })
+    );
+
+    if (errors.length) {
+      transaction.rollback();
+
+      throw new TransactionError(errors);
+    }
+
+    await transaction.success();
+
+    return output;
+  }
+
+  /**
+   * Add a new Model to the OGM instance.
+   */
+  addModel(model: Model<any>): void {
+    this.models.set(model.name(), model);
+  }
+
+  /**
+   * Return a query builder.
+   */
+  query(): QueryBuilder {
+    return new QueryBuilder(this);
   }
 }
