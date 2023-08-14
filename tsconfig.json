@@ -5,6 +5,7 @@
     "target": "ES2022",
     "lib": ["ES2022"],
     "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
     "declaration": true,
     "stripInternal": true,
@@ -15,7 +16,28 @@
     "noImplicitAny": false,
     "esModuleInterop": true,
     "outDir": "dist",
-    "baseUrl": "src"
+    "baseUrl": ".",
+    "rootDir": "./src",
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "paths": {
+      "@app/*": ["./src/app/*"],
+      "@models/*": ["./src/models/*"],
+      "@query/*": ["./src/query/*"],
+      "@schema/*": ["./src/schema/*"],
+      "@types/*": ["./src/types/*"],
+      "@utils/*": ["./src/utils/*"]
+    },
+    "plugins": [
+      {
+        "transform": "typescript-transform-paths",
+        "exclude": ["**/node_modules/**"]
+      },
+      {
+        "transform": "typescript-transform-paths",
+        "exclude": ["**/node_modules/**"],
+        "afterDeclarations": true
+      }
+    ]
   },
   "include": ["src/**/*"],
   "exclude": ["./node_modules", "./test/**/*.spec.ts", "./dist"]

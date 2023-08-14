@@ -1,6 +1,17 @@
+import Where from "@query/sections/where";
+import RawStatement from "./raw";
+import WhereId from "@query/sections/whereId";
+import WhereBetween from "@query/sections/whereBetween";
+
 class WhereStatement {
   #prefix: string;
-  #conditions: WhereStatement[];
+  #conditions: (
+    | WhereStatement
+    | Where
+    | WhereId
+    | WhereBetween
+    | RawStatement
+  )[];
   #connector: "AND" | "OR";
 
   constructor(prefix = "") {
@@ -13,7 +24,9 @@ class WhereStatement {
     this.#connector = connector;
   }
 
-  append(condition: WhereStatement) {
+  append(
+    condition: WhereStatement | Where | WhereId | WhereBetween | RawStatement
+  ) {
     this.#conditions.push(condition);
 
     return this;

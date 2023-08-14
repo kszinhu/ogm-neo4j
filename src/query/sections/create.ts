@@ -2,9 +2,9 @@ import Model from "src/models/model";
 
 class Create {
   #alias: string;
-  #model?: Model<any>;
+  #model?: Model<any, any>;
 
-  constructor(alias: string, model?: Model<any>) {
+  constructor(alias: string, model?: Model<any, any>) {
     this.#alias = alias;
     this.#model = model;
   }

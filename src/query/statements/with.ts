@@ -1,8 +1,13 @@
-class With {
+export interface WithParams {
+  withs: string[];
+  isDistinct?: boolean;
+}
+
+class WithStatement {
   #with: string[];
   #isDistinct: boolean;
 
-  constructor({ withs = [], isDistinct = false }) {
+  constructor({ withs = [], isDistinct = false }: WithParams) {
     this.#with = withs;
     this.#isDistinct = isDistinct;
   }
@@ -12,4 +17,4 @@ class With {
   }
 }
 
-export default With;
+export default WithStatement;

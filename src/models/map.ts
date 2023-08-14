@@ -1,9 +1,11 @@
-import OGM from "../app/index";
+import OGM from "../app/app";
 import Model from "./model";
 
-class ModelMap {
+type AnyModel = Model<any, any>;
+
+class ModelMap<M extends Record<string, AnyModel>> {
   #app: OGM;
-  #models: Map<string, Model<any>>;
+  #models: Map<keyof M & string, M[keyof M]>;
 
   constructor(app: OGM) {
     this.#app = app;
@@ -20,21 +22,21 @@ class ModelMap {
   /**
    * Get the model by identifier.
    */
-  get(name: string): Model<any> | undefined {
-    return this.#models.get(name);
+  get<K extends keyof M & string>(name: K): M[keyof M] | undefined {
+    return this.#models.get(name as string);
   }
 
   /**
    * Set the model.
    */
-  set(name: string, model: Model<any>): void {
-    this.#models.set(name, model);
+  set<K extends keyof M & string>(name: K, model: AnyModel): void {
+    this.#models.set(name, model as M[keyof M]);
   }
 
   /**
    * Get the keys of the models.
    */
-  keys(): IterableIterator<string> {
+  keys(): IterableIterator<keyof M & string> {
     return this.#models.keys();
   }
 
@@ -48,11 +50,17 @@ class ModelMap {
   /**
    * Iterate over the models.
    */
-  forEach(callback: (model: Model<any>, name: string) => void): void {
+  forEach(
+    callback: (
+      model: M[keyof M],
+      name: keyof M,
+      map?: Map<keyof M, M[keyof M]>
+    ) => void
+  ): void {
     this.#models.forEach(callback);
   }
 
-  /**
+  /**F
    * Clear the models.
    */
   clear(): void {
@@ -62,7 +70,7 @@ class ModelMap {
   /**
    * Get the schema of the model.
    */
-  schema(name: string): any {
+  schema(name: keyof M & string): M[keyof M & string]["schema"] | undefined {
     return this.#models.get(name)?.schema;
   }
 }

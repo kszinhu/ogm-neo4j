@@ -4,9 +4,9 @@
   "description": "Object-Graph-Mapping for neo4j",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "tspc",
     "build:prod": "npm run test && npm run build",
-    "clean": "tsc -b --clean",
+    "clean": "tspc -b --clean",
     "prepare": "npm run build",
     "test:all": "mocha --parallel -r tsconfig-paths/register ./test/**/*.spec.ts",
     "test": "mocha -r tsconfig-paths/register"
@@ -25,6 +25,31 @@
     "name": "Cassiano Henrique Aparecido Rodrigues",
     "email": "kszinhu@modscleo4.dev.br"
   },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/*"
+      ]
+    }
+  },
+  "exports": {
+    "./app": {
+      "import": "./dist/app/index.js",
+      "types": "./dist/app/index.d.ts"
+    },
+    "./models": {
+      "import": "./dist/models/index.js",
+      "types": "./dist/models/index.d.ts"
+    },
+    "./query": {
+      "import": "./dist/query/index.js",
+      "types": "./dist/query/index.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    }
+  },
   "dependencies": {
     "chevrotain": "^10.5.0",
     "neo4j-driver": "^5.8.1",
@@ -39,10 +64,10 @@
     "dotenv": "^16.0.3",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.2.0"
+    "ts-patch": "^3.0.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript-transform-paths": "^3.4.6"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "bugs": {
     "url": "https://github.com/kszinhu/ogm-neo4j/issues"
   },

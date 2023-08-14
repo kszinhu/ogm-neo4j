@@ -1,32 +1,27 @@
-type RelationshipDirection =
-  | "DIRECTION_IN"
-  | "DIRECTION_OUT"
-  | "DIRECTION_BOTH";
+import { DirectionTypes } from "src/types/lexer";
+
+type RelationshipDirection = Uppercase<DirectionTypes>;
 
 class Relationship {
   #relationship: string | string[];
   #alias: string;
   #direction: RelationshipDirection;
-  #traversals: string[];
 
   constructor(
     relationship: string | string[],
     alias: string,
-    direction: RelationshipDirection,
-    traversals: string[]
+    direction: RelationshipDirection
   ) {
     this.#relationship = relationship;
     this.#alias = alias;
     this.#direction = direction;
-    this.#traversals = traversals;
   }
 
   toString() {
     const direction = {
-        in: this.#direction === "DIRECTION_IN" ? "<" : "",
-        out: this.#direction === "DIRECTION_OUT" ? ">" : "",
+        in: this.#direction === "IN" ? "<" : "",
+        out: this.#direction === "OUT" ? ">" : "",
       },
-      traversals = this.#traversals ? `*${this.#traversals.join("")}` : "",
       alias = this.#alias ? this.#alias : "";
     let relationship = this.#relationship ?? "";
 
@@ -37,9 +32,7 @@ class Relationship {
     }
 
     const relationString =
-      this.#relationship || this.#alias || this.#traversals
-        ? `[${alias}${relationship}${traversals}]`
-        : "";
+      this.#relationship || this.#alias ? `[${alias}${relationship}]` : "";
 
     return `${direction.in}-${relationString}-${direction.out}`;
   }

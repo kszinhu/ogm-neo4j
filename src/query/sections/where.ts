@@ -22,6 +22,25 @@ class Where {
   #operator: WhereOperator;
   #right: string;
   #negative: boolean;
+  static supportedOperators: WhereOperator[] = [
+    "=",
+    "<",
+    ">",
+    "<=",
+    ">=",
+    "<>",
+    "!=",
+    "LIKE",
+    "NOT LIKE",
+    "ILIKE",
+    "NOT ILIKE",
+    "IN",
+    "NOT IN",
+    "BETWEEN",
+    "NOT BETWEEN",
+    "IS NULL",
+    "IS NOT NULL",
+  ];
 
   constructor(
     left: string,
@@ -37,6 +56,10 @@ class Where {
 
   setNegative(isNegative: boolean) {
     this.#negative = isNegative;
+  }
+
+  static isWhereOperator(operator: string): operator is WhereOperator {
+    return this.supportedOperators.includes(operator as WhereOperator);
   }
 
   toString() {

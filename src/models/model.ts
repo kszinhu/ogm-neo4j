@@ -1,35 +1,65 @@
 import Queryable from "./queryable";
 import Property from "./property";
-import OGM from "../app/index";
+import OGM from "../app/app";
 
 import type {
   ModelSchema,
   PropertySchema,
   PropertyRelationSchema,
+  ProvidedModelSchema,
+  ProvidedPropertiesFactory as ProvidedModelProperties,
+  ProvidedPropertySchema,
 } from "../types/models";
 import { PropertyType, type PropertyTypes } from "../types/lexer";
 
-class Model<P extends Record<string, PropertySchema>> extends Queryable<P> {
+class Model<
+  K extends string,
+  P extends ProvidedModelProperties<K & string>
+> extends Queryable<K & string, P> {
   #name: string;
-  #schema: ModelSchema<P>;
+  #schema: ModelSchema<any>;
   #properties: Map<keyof P, Property<Exclude<PropertyTypes, "relation">>>;
   #relationships: Map<keyof P, Property<PropertyType.relation>>;
   #labels: string[];
 
-  constructor(app: OGM, name: string, schema: ModelSchema<P>) {
+  constructor(app: OGM, name: string, schema: ProvidedModelSchema<K>) {
     super(app);
     this.#name = name;
-    this.#schema = schema;
+    this.#schema = this.#transformProvidedSchemaToSchema(schema);
     this.#properties = new Map();
     this.#relationships = new Map();
     this.#labels = schema.labels.sort();
 
-    this.#transformSchemaToModel(schema);
+    this.#transformSchemaToModel(this.#schema);
   }
 
   /* @internal */
-  #transformSchemaToModel(schema: ModelSchema<P>) {
+  #isPropertySchema(property: any): property is PropertySchema {
+    return (
+      Object.hasOwnProperty.call(property, "type") &&
+      Object.hasOwnProperty.call(property, "readonly") &&
+      Object.hasOwnProperty.call(property, "unique") &&
+      Object.hasOwnProperty.call(property, "required") &&
+      Object.hasOwnProperty.call(property, "defaultValue")
+    );
+  }
+
+  /* @internal */
+  #isProvidedSchema(property: any): property is ProvidedPropertySchema {
+    return (
+      property &&
+      typeof property === "object" &&
+      property.hasOwnProperty("type")
+    );
+  }
+
+  /* @internal */
+  #transformSchemaToModel(schema: ModelSchema<K & string>) {
     for (const [name, property] of Object.entries(schema.properties)) {
+      if (!this.#isPropertySchema(property)) {
+        throw new Error("Invalid property schema");
+      }
+
       switch (property.type) {
         case PropertyType.relation:
           this.addRelation(name, property as PropertyRelationSchema);
@@ -38,6 +68,35 @@ class Model<P extends Record<string, PropertySchema>> extends Queryable<P> {
           this.addProperty(name, property);
       }
     }
+  }
+
+  /* @internal */
+  #transformProvidedSchemaToSchema(
+    schema: ProvidedModelSchema<K & string>
+  ): ModelSchema<K> {
+    const properties: ModelSchema<K & string>["properties"] = {} as Record<
+      K,
+      PropertySchema
+    >;
+
+    for (const [name, property] of Object.entries(schema.properties)) {
+      if (!this.#isProvidedSchema(property)) {
+        throw new Error("Invalid provided schema");
+      }
+
+      switch (property.type) {
+        case PropertyType.relation:
+          properties[name] = property as PropertyRelationSchema;
+          break;
+        default:
+          properties[name] = property;
+      }
+    }
+
+    return {
+      labels: schema.labels,
+      properties,
+    };
   }
 
   /**
@@ -80,7 +139,7 @@ class Model<P extends Record<string, PropertySchema>> extends Queryable<P> {
       schema
     );
 
-    this.#properties.set(name, property);
+    this.#properties.set(name as keyof P & string, property);
 
     return this;
   }
@@ -91,7 +150,7 @@ class Model<P extends Record<string, PropertySchema>> extends Queryable<P> {
   addRelation(name: string, schema: PropertyRelationSchema) {
     const property = new Property<PropertyType.relation>(name, schema);
 
-    this.#relationships.set(name, property);
+    this.#relationships.set(name as keyof P & string, property);
 
     return this;
   }

@@ -44,6 +44,10 @@ class Property<T extends PropertySchema["type"]> {
   get required(): boolean {
     return !!this.#required;
   }
+
+  isInteger(): this is Property<"integer"> {
+    return this.#type === "integer";
+  }
 }
 
 export default Property;

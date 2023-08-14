@@ -1,11 +1,29 @@
-import OGM from "../app/index";
-import Builder from "../query/builder";
+import {
+  ModelIdentifier,
+  PropertySchema,
+  ProvidedPropertiesFactory,
+} from "../types/models";
 
-class Queryable<P extends Record<string, any>> {
+import OGM from "@app/app";
+import Builder from "@query/builder";
+import Model from "@models/model";
+
+class Queryable<K extends string, P extends ProvidedPropertiesFactory<K>> {
   #application: OGM;
 
   constructor(app: OGM) {
     this.#application = app;
+  }
+
+  /* @internal */
+  #isPropertySchema(property: any): property is PropertySchema {
+    return (
+      Object.hasOwnProperty.call(property, "type") &&
+      Object.hasOwnProperty.call(property, "readonly") &&
+      Object.hasOwnProperty.call(property, "unique") &&
+      Object.hasOwnProperty.call(property, "required") &&
+      Object.hasOwnProperty.call(property, "defaultValue")
+    );
   }
 
   /**
@@ -18,42 +36,54 @@ class Queryable<P extends Record<string, any>> {
   /**
    * Create a new record of this model.
    */
-  create() {
+  async create(data: P): Promise<boolean> {
     throw new Error("Not implemented");
   }
 
   /**
    * Delete all records of this model.
    */
-  deleteAll() {
+  async deleteAll(): Promise<boolean> {
     throw new Error("Not implemented");
   }
 
   /**
    * Get a collection of all records of this model.
    */
-  all(properties, order, limit, skip) {
+  async all<M extends Model<K, P>>(
+    properties?: K[],
+    options?: {
+      limit?: number;
+      skip?: number;
+      order?: "ASC" | "DESC";
+    }
+  ): Promise<M[]> {
     throw new Error("Not implemented");
   }
 
   /**
    * Find a record of this model by it's identifier.
    */
-  find(identifier) {
+  async find<M extends Model<K, P>>(
+    identifier: ModelIdentifier<M>
+  ): Promise<M | undefined> {
     throw new Error("Not implemented");
   }
 
   /**
    * Find a record of this model by it's internal ID (neo4j ID).
    */
-  findByID(id) {
+  async findByID<M extends Model<K, P>>(id: string): Promise<M | undefined> {
     throw new Error("Not implemented");
   }
 
   /**
    * Find a record by a property.
    */
-  first(key: keyof P, value: P[keyof P]) {
+  async first<M extends Model<K, P>>(
+    key: keyof P,
+    value: P[keyof P]
+  ): Promise<M | undefined> {
     throw new Error("Not implemented");
   }
 }

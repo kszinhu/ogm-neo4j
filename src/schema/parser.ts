@@ -17,7 +17,7 @@ import { createIfNotExists as createDebugFile } from "@utils/debugFiles";
 /**
  * Responsible for parsing the schema file and generate the schema of the database.
  *
- * Using the Chevrotain parser generator to co29/07/2023nsume the tokens from the tokenizer.
+ * Using the Chevrotain parser generator to consume the tokens from the tokenizer.
  */
 class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
   /**

@@ -1,4 +1,5 @@
-import OGM from "../app/index";
+import OGM from "@app/app";
+import Model from "@models/model";
 import { Session } from "neo4j-driver";
 
 type Query =

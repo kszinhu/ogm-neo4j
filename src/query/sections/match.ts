@@ -3,16 +3,16 @@ import Property from "./property";
 
 class Match {
   #alias: string;
-  #model: Model<any> | string = "";
+  #model: Model<any, any> | string = "";
   #properties: Property[] = [];
 
   constructor(
-    alias: string,
-    model?: Model<any> | string,
+    alias: string = "",
+    model: Model<any, any> | string = "",
     properties: Property[] = []
   ) {
     this.#alias = alias;
-    this.#model = model ?? "";
+    this.#model = model;
     this.#properties = properties;
   }
 

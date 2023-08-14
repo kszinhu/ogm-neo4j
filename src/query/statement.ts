@@ -1,17 +1,30 @@
-import Property from "../models/property";
+import Property from "./sections/property";
+import Match from "./sections/match";
 import WhereStatement from "./statements/where";
+import Order from "./sections/order";
+import Relationship from "./sections/relationship";
+
+import type { PropertyRelationSchema } from "src/types/models";
+import type { DirectionTypes } from "src/types/lexer";
+import RawStatement from "./statements/raw";
+
+export interface PropertyRelation {
+  name: string;
+  direction: Uppercase<DirectionTypes>;
+}
 
 class Statement {
   #prefix: string;
-  #patterns: string[] = [];
-  #where: WhereStatement[] = [];
-  #order: string[] = [];
+  #patterns: (Match | Relationship)[] = [];
+  #where: (WhereStatement | RawStatement)[] = [];
+  #order: Order[] = [];
   #detachDelete: string[] = [];
   #return: string[] = [];
-  #set: Property<any>[] = [];
-  #onCreateSet: Property<any>[] = [];
-  #onMatchSet: Property<any>[] = [];
+  #set: Property[] = [];
+  #onCreateSet: Property[] = [];
+  #onMatchSet: Property[] = [];
   #remove: string[] = [];
+  #delete: string[] = [];
   #limit: string | null = null;
   #skip: string | null = null;
 
@@ -19,14 +32,22 @@ class Statement {
     this.#prefix = prefix;
   }
 
-  match(pattern: string) {
+  match(pattern: Match) {
     this.#patterns.push(pattern);
 
     return this;
   }
 
-  where(condition: WhereStatement) {
-    this.#where.push(condition);
+  delete(...values: string[]) {
+    this.#delete.push(...values);
+
+    return this;
+  }
+
+  where(
+    condition: WhereStatement | RawStatement | (WhereStatement | RawStatement)[]
+  ) {
+    this.#where.push(...(Array.isArray(condition) ? condition : [condition]));
 
     return this;
   }
@@ -43,7 +64,7 @@ class Statement {
     return this;
   }
 
-  order(order: string) {
+  order(order: Order) {
     this.#order.push(order);
 
     return this;
@@ -61,20 +82,27 @@ class Statement {
     return this;
   }
 
-  set(name: string, value: any) {
-    this.#set.push(new Property(name, value));
+  relationship(relationship: PropertyRelation, alias: string) {
+    const { name, direction } = relationship;
+    this.#patterns.push(new Relationship(name, alias, direction));
 
     return this;
   }
 
-  onCreateSet(name: string, value: any) {
-    this.#onCreateSet.push(new Property(name, value));
+  set(name: string, value: any, operator: string) {
+    this.#set.push(new Property(name, value, operator));
 
     return this;
   }
 
-  onMatchSet(name: string, value: any) {
-    this.#onMatchSet.push(new Property(name, value));
+  onCreateSet(name: string, value: any, operator: string) {
+    this.#onCreateSet.push(new Property(name, value, operator));
+
+    return this;
+  }
+
+  onMatchSet(name: string, value: any, operator: string) {
+    this.#onMatchSet.push(new Property(name, value, operator));
 
     return this;
   }
@@ -85,9 +113,9 @@ class Statement {
     return this;
   }
 
-  toString() {
+  toString(includePrefix = true) {
     const statements = [
-      `${this.#prefix} ${this.#patterns.join(", ")}`,
+      `${includePrefix ? this.#prefix : ""} ${this.#patterns.join(", ")}`,
       this.#where.length ? `WHERE ${this.#where.join(" AND ")}` : "",
       this.#order.length ? `ORDER BY ${this.#order.join(", ")}` : "",
       this.#detachDelete.length
