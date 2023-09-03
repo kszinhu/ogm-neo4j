@@ -18,9 +18,6 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "author": {
     "name": "Cassiano Henrique Aparecido Rodrigues",
     "email": "kszinhu@modscleo4.dev.br"
@@ -32,6 +29,10 @@
       ]
     }
   },
+  "files": [
+    "dist/",
+    "package.json"
+  ],
   "exports": {
     "./app": {
       "import": "./dist/app/index.js",
