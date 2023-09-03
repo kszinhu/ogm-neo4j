@@ -63,8 +63,6 @@ export default class OGM {
 
   /**
    * Generate instance using .env file configuration
-   *
-   * @returns {OGM} - The OGM instance.
    */
   static fromEnv(): OGM {
     dotenv.config();

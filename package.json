@@ -35,20 +35,28 @@
   ],
   "exports": {
     "./app": {
-      "import": "./dist/app/index.js",
-      "types": "./dist/app/index.d.ts"
+      "import": {
+        "types": "./dist/app/index.d.ts",
+        "default": "./dist/app/index.js"
+      }
     },
     "./models": {
-      "import": "./dist/models/index.js",
-      "types": "./dist/models/index.d.ts"
+      "import": {
+        "default": "./dist/models/index.js",
+        "types": "./dist/models/index.d.ts"
+      }
     },
     "./query": {
-      "import": "./dist/query/index.js",
-      "types": "./dist/query/index.d.ts"
+      "import": {
+        "default": "./dist/query/index.js",
+        "types": "./dist/query/index.d.ts"
+      }
     },
     "./utils": {
-      "import": "./dist/utils/index.js",
-      "types": "./dist/utils/index.d.ts"
+      "import": {
+        "default": "./dist/utils/index.js",
+        "types": "./dist/utils/index.d.ts"
+      }
     }
   },
   "dependencies": {
