@@ -2,9 +2,9 @@ import { Integer } from "neo4j-driver";
 import { valueToJSON } from "src/utils";
 
 class Entity<T extends Record<string, any>> {
-  private _id: number;
-  private _identity: Integer;
-  private _properties: Map<keyof T, T[keyof T]>;
+  protected _id: number;
+  protected _identity: Integer;
+  protected _properties: Map<keyof T, T[keyof T]>;
 
   constructor(identity: Integer, properties: Map<keyof T, T[keyof T]>) {
     this._identity = identity;
@@ -12,11 +12,11 @@ class Entity<T extends Record<string, any>> {
     this._id = identity.toNumber();
   }
 
-  id() {
+  get id() {
     return this._id;
   }
 
-  identity() {
+  get identity() {
     return this._identity;
   }
 

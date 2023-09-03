@@ -1,4 +1,4 @@
-import Model from "src/models/model";
+import { Model } from "@models/index";
 import Property from "./property";
 
 class Match {
@@ -21,7 +21,7 @@ class Match {
       properties = "";
 
     if (this.#model instanceof Model) {
-      model = `:${this.#model.labels().join(":")}`;
+      model = `:${this.#model.labels.join(":")}`;
     } else if (typeof this.#model === "string") {
       model = `:${this.#model}`;
     }

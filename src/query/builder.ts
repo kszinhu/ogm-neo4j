@@ -11,7 +11,7 @@ import WithStatement, { type WithParams } from "./statements/with";
 import WhereStatement from "./statements/where";
 import RawStatement from "./statements/raw";
 
-import type { PropertySchema } from "src/types/models";
+import type { PropertySchema } from "../types/models";
 import WhereId from "./sections/whereId";
 import WhereBetween from "./sections/whereBetween";
 

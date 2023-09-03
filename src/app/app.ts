@@ -6,18 +6,22 @@ import neo4j, {
   Session,
   Transaction,
   QueryResult,
+  int,
+  Integer,
 } from "neo4j-driver";
 
-import { consoleMessage } from "@utils/index";
+import { consoleMessage, searchOnDirectory } from "@utils/index";
 import ModelMap from "@models/map";
 import QueryBuilder from "@query/builder";
 import { Model } from "@models/index";
 import { Schema } from "@schema/index";
+import { TransactionError } from "@errors/index";
 
 export default class OGM {
   #driver!: Driver;
   models: ModelMap<Record<string, Model<any, any>>>;
   schema: Schema;
+  schemaPath: string;
 
   /**
    * The constructor of the OGM class.
@@ -30,6 +34,7 @@ export default class OGM {
   ) {
     const auth = neo4j.auth.basic(username, password);
 
+    this.schemaPath = searchOnDirectory(process.cwd());
     this.models = new ModelMap(this);
     this.schema = new Schema(this);
 
@@ -46,6 +51,14 @@ export default class OGM {
         error: error as string,
       });
     }
+
+    try {
+      consoleMessage({
+        message: "[OGM] Applying schema...",
+      });
+
+      this.schema.install();
+    } catch (error) {}
   }
 
   /**
@@ -125,6 +138,40 @@ export default class OGM {
   }
 
   /**
+   * Run a cypher query
+   */
+  cypher(
+    query: string,
+    params: Record<string, any> = {},
+    session: false | Session = false
+  ) {
+    const driver = session ? session : this.readSession();
+
+    return driver
+      .run(query, params)
+      .then((response) => {
+        if (!session) driver.close();
+
+        return response;
+      })
+      .catch((error) => {
+        if (!session) driver.close();
+
+        error.query = query;
+        error.params = params;
+
+        throw error;
+      });
+  }
+
+  /**
+   * Run a cypher query in write mode.
+   */
+  writeCypher(query: string, params: Record<string, any> = {}) {
+    return this.cypher(query, params, this.writeSession());
+  }
+
+  /**
    * Get the session of the database.
    */
   session(mode: SessionMode = neo4j.session.READ): Session {
@@ -162,15 +209,26 @@ export default class OGM {
     return transaction;
   }
 
-  async batch(queries) {
+  /**
+   * Run a batch of queries.
+   */
+  async batch(
+    queries:
+      | { query: string; params: Record<string, string | number> }[]
+      | string[]
+  ): Promise<QueryResult[]> {
     const transaction = this.transaction();
     const output: QueryResult[] = [];
     const errors: { query: string; params: any; error: unknown }[] = [];
 
     await Promise.all(
       queries.map((query) => {
-        const params = "params" in query ? query.params : {};
-        query = "query" in query ? query.query : query;
+        if (!query) throw new Error("Query is required");
+
+        const params =
+          typeof query === "object" && "params" in query ? query.params : {};
+        query =
+          typeof query === "object" && "query" in query ? query.query : query;
 
         try {
           return transaction
@@ -190,7 +248,10 @@ export default class OGM {
     if (errors.length) {
       transaction.rollback();
 
-      throw new TransactionError(errors);
+      const causes = errors.map(({ error: cause }) => cause as string),
+        message = `Error running batch of queries -> ${causes}`;
+
+      throw new TransactionError({ message, cause: causes.join("\n") });
     }
 
     await transaction.success();
@@ -198,6 +259,9 @@ export default class OGM {
     return output;
   }
 
+  /**
+   * Retrieve a model.
+   */
   retrieveModel<M extends Model<any, any>>(name: string): M {
     const model = this.models.get(name);
 
@@ -211,5 +275,12 @@ export default class OGM {
    */
   query(): QueryBuilder {
     return new QueryBuilder(this);
+  }
+
+  /**
+   * Convert neo4j integer to number.
+   */
+  static toNumber(value: number): Integer {
+    return int(value);
   }
 }

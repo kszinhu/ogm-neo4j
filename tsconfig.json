@@ -25,7 +25,8 @@
       "@query/*": ["./src/query/*"],
       "@schema/*": ["./src/schema/*"],
       "@types/*": ["./src/types/*"],
-      "@utils/*": ["./src/utils/*"]
+      "@utils/*": ["./src/utils/*"],
+      "@errors/*": ["./src/errors/*"]
     },
     "plugins": [
       {

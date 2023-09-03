@@ -1,6 +1,6 @@
 interface ICliMessageArgs {
   message: string;
-  type?: "error" | "success" | "info" | "normal";
+  type?: "error" | "success" | "info" | "normal" | "debug";
   exit?: boolean;
   error?: string;
 }
@@ -15,12 +15,14 @@ const consoleMessage = ({
       error: "\x1b[31m%s\x1b[0m",
       success: "\x1b[32m%s\x1b[0m",
       info: "\x1b[36m%s\x1b[0m",
+      debug: "\x1b[35m%s\x1b[0m",
       normal: "\x1b[37m%s\x1b[0m",
     } as const,
     handleConsoleType = {
       error: console.error,
       success: console.log,
       info: console.info,
+      debug: console.debug,
       normal: console.log,
     } as const;
 

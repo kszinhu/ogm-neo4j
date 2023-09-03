@@ -1,4 +1,4 @@
-import Model from "src/models/model";
+import { Model } from "@models/index";
 
 class Create {
   #alias: string;
@@ -14,7 +14,7 @@ class Create {
     let model: string = "";
 
     if (this.#model instanceof Model) {
-      model = `:${this.#model.labels().join(":")}`;
+      model = `:${this.#model.labels.join(":")}`;
     } else if (typeof this.#model === "string") {
       model = `:${this.#model}`;
     }

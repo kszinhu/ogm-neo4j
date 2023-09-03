@@ -1,4 +1,4 @@
-import OGM from "../app/app";
+import OGM from "@app/app";
 import Model from "./model";
 
 type AnyModel = Model<any, any>;

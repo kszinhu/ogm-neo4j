@@ -4,8 +4,8 @@ import WhereStatement from "./statements/where";
 import Order from "./sections/order";
 import Relationship from "./sections/relationship";
 
-import type { PropertyRelationSchema } from "src/types/models";
-import type { DirectionTypes } from "src/types/lexer";
+import type { PropertyRelationSchema } from "../types/models";
+import type { DirectionTypes } from "../types/lexer";
 import RawStatement from "./statements/raw";
 
 export interface PropertyRelation {

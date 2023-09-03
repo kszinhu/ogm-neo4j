@@ -1,8 +1,9 @@
-import type { PropertyTypes } from "../types/lexer";
+import { DirectionTypes } from "../types/lexer";
 import type { PropertySchema } from "../types/models";
 
 class Property<T extends PropertySchema["type"]> {
   #name: string;
+  #defaultValue: any;
   // @ts-expect-error
   #type: T;
   // @ts-expect-error
@@ -11,7 +12,10 @@ class Property<T extends PropertySchema["type"]> {
   #unique: boolean;
   // @ts-expect-error
   #required: boolean;
-  #defaultValue: any;
+  // @ts-expect-error
+  #hidden: boolean;
+  #direction: undefined | DirectionTypes;
+  #target: undefined | string;
 
   constructor(name: string, schema: PropertySchema) {
     this.#name = name;
@@ -43,6 +47,23 @@ class Property<T extends PropertySchema["type"]> {
 
   get required(): boolean {
     return !!this.#required;
+  }
+
+  get direction(): undefined | DirectionTypes {
+    return this.#direction;
+  }
+
+  get target(): undefined | string {
+    return this.#target;
+  }
+
+  get from(): undefined | string {
+    return this.#direction === "out" ? this.#target : undefined;
+  }
+
+  // TODO: implement this feature
+  get hidden() {
+    return this.#hidden;
   }
 
   isInteger(): this is Property<"integer"> {

@@ -41,6 +41,15 @@ class Queryable<K extends string, P extends ProvidedPropertiesFactory<K>> {
   }
 
   /**
+   * Delete a record of this model by it's identifier.
+   */
+  async delete<M extends Model<K, P>>(
+    identifier: ModelIdentifier<M>
+  ): Promise<boolean> {
+    throw new Error("Not implemented");
+  }
+
+  /**
    * Delete all records of this model.
    */
   async deleteAll(): Promise<boolean> {

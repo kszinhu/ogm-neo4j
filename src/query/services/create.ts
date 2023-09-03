@@ -5,7 +5,7 @@ function GenerateDefaultValuesAsync<M extends Model<any, any>>(
   model: M
 ): Promise<Record<string, any>> {
   return new Promise((resolve) => {
-    const schema = model.schema();
+    const schema = model.schema;
 
     const defaultValues: Record<string, any> = {};
 
@@ -28,6 +28,6 @@ export default async function Create<M extends Model<any, any>>(
   return await GenerateDefaultValuesAsync(model).then((values) => {
     const builder = app.query();
 
-    add
+    // add
   });
 }

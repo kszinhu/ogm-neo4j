@@ -45,7 +45,7 @@ class Node<T extends Record<string, Property>> extends Entity<T> {
   /**
    * Convert this node to a friendly JSON format.
    */
-  toJSON() {
+  toJSON(): Promise<string> {
     throw new Error("Not implemented");
   }
 }

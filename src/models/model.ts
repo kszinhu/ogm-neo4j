@@ -18,8 +18,11 @@ class Model<
 > extends Queryable<K & string, P> {
   #name: string;
   #schema: ModelSchema<any>;
-  #properties: Map<keyof P, Property<Exclude<PropertyTypes, "relation">>>;
-  #relationships: Map<keyof P, Property<PropertyType.relation>>;
+  #properties: Map<
+    keyof P & string,
+    Property<Exclude<PropertyTypes, "relation">>
+  >;
+  #relationships: Map<keyof P & string, Property<PropertyType.relation>>;
   #labels: string[];
 
   constructor(app: OGM, name: string, schema: ProvidedModelSchema<K>) {
@@ -79,9 +82,21 @@ class Model<
       PropertySchema
     >;
 
-    for (const [name, property] of Object.entries(schema.properties)) {
+    for (let [name, property] of Object.entries(schema.properties)) {
       if (!this.#isProvidedSchema(property)) {
         throw new Error("Invalid provided schema");
+      }
+
+      property = {
+        ...property,
+        readonly: property.readonly ?? false,
+        unique: property.unique ?? false,
+        required: property.required ?? false,
+        defaultValue: property.defaultValue ?? undefined,
+      } as PropertySchema;
+
+      if (!this.#isPropertySchema(property)) {
+        throw new Error("Invalid property schema");
       }
 
       switch (property.type) {
@@ -102,29 +117,36 @@ class Model<
   /**
    * Get the name of this model.
    */
-  name() {
+  get name() {
     return this.#name;
   }
 
   /**
    * Get the schema of this model.
    */
-  schema() {
+  get schema() {
     return this.#schema;
   }
 
   /**
    * Get the labels of this model.
    */
-  labels() {
+  get labels() {
     return this.#labels;
   }
 
   /**
    * Get the properties of this model.
    */
-  properties() {
+  get properties() {
     return this.#properties;
+  }
+
+  /**
+   * Get all defined relationships of this model.
+   */
+  get relationships() {
+    return this.#relationships;
   }
 
   /**
