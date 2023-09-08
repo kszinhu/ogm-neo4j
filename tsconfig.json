@@ -1,11 +1,9 @@
 {
   "compilerOptions": {
     "moduleResolution": "Node16",
-    "module": "Node16",
+    "module": "ES2022",
     "target": "ES2022",
     "lib": ["ES2022"],
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
     "declaration": true,
     "stripInternal": true,
@@ -40,5 +38,5 @@
     ]
   },
   "include": ["src/**/*"],
-  "exclude": ["./node_modules", "./test/**/*.spec.ts", "./dist"]
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }

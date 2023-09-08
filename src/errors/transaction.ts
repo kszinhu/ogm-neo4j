@@ -8,9 +8,7 @@ export default class TransactionError extends Error {
   name = "TRANSACTION_ERROR";
 
   constructor({ cause, message, stack }: ErrorConstructorParams) {
-    super(message ? (message as string) : "Transaction error", {
-      cause,
-    });
+    super(message ? (message as string) : "Transaction error");
 
     this.stack = stack;
   }

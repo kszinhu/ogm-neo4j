@@ -4,6 +4,7 @@
   "description": "Object-Graph-Mapping for neo4j",
   "license": "MIT",
   "type": "module",
+  "main": "dist/app/index.js",
   "scripts": {
     "build": "tspc",
     "build:prod": "npm run test && npm run build",
@@ -23,27 +24,35 @@
     "name": "Cassiano Henrique Aparecido Rodrigues",
     "email": "kszinhu@modscleo4.dev.br"
   },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "dist/*"
-      ]
-    }
-  },
   "files": [
     "dist/",
     "package.json"
   ],
   "exports": {
-    "./package.json": "./package.json",
     ".": "./dist",
-    "./app": {
-      "import": "./dist/app/index.js",
-      "types": "./dist/app/app.d.ts"
-    },
+    "./app": "./dist/app/index.js",
     "./models": "./dist/models/index.js",
     "./query": "./dist/query/index.js",
     "./utils": "./dist/utils/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "app": [
+        "./dist/app/index.d.ts"
+      ],
+      "models": [
+        "./dist/models/index.d.ts"
+      ],
+      "query": [
+        "./dist/query/index.d.ts"
+      ],
+      "utils": [
+        "./dist/utils/index.d.ts"
+      ],
+      "*": [
+        "./dist/*.d.ts"
+      ]
+    }
   },
   "dependencies": {
     "chevrotain": "^10.5.0",
