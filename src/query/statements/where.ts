@@ -1,7 +1,7 @@
-import Where from "@query/sections/where";
-import RawStatement from "./raw";
-import WhereId from "@query/sections/whereId";
-import WhereBetween from "@query/sections/whereBetween";
+import Where from "@query/sections/where.js";
+import RawStatement from "./raw.js";
+import WhereId from "@query/sections/whereId.js";
+import WhereBetween from "@query/sections/whereBetween.js";
 
 class WhereStatement {
   #prefix: string;

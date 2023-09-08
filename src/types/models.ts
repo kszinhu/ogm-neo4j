@@ -1,5 +1,5 @@
-import { Model } from "@models/index";
-import type { PropertyType, PropertyTypes } from "./lexer";
+import { Model } from "@models/index.js";
+import type { PropertyType, PropertyTypes } from "./lexer.js";
 
 type BasePropertySchema = {
   readonly: boolean;

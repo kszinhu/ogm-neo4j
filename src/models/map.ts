@@ -1,5 +1,5 @@
-import OGM from "@app/app";
-import Model from "./model";
+import OGM from "@app/app.js";
+import Model from "./model.js";
 
 type AnyModel = Model<any, any>;
 

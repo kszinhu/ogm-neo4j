@@ -1,1 +1,1 @@
-export { default as QueryBuilder } from "./builder";
+export { default as QueryBuilder } from "./builder.js";

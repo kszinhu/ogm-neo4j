@@ -1,19 +1,19 @@
-import OGM from "@app/app";
-import Model from "@models/model";
-import Property from "@models/property";
+import OGM from "@app/app.js";
+import Model from "@models/model.js";
+import Property from "@models/property.js";
 
-import Statement, { PropertyRelation } from "./statement";
+import Statement, { PropertyRelation } from "./statement.js";
 
-import Match from "./sections/match";
-import Order from "./sections/order";
-import Where from "./sections/where";
-import WithStatement, { type WithParams } from "./statements/with";
-import WhereStatement from "./statements/where";
-import RawStatement from "./statements/raw";
+import Match from "./sections/match.js";
+import Order from "./sections/order.js";
+import Where from "./sections/where.js";
+import WithStatement, { type WithParams } from "./statements/with.js";
+import WhereStatement from "./statements/where.js";
+import RawStatement from "./statements/raw.js";
 
-import type { PropertySchema } from "../types/models";
-import WhereId from "./sections/whereId";
-import WhereBetween from "./sections/whereBetween";
+import type { PropertySchema } from "../types/models.js";
+import WhereId from "./sections/whereId.js";
+import WhereBetween from "./sections/whereBetween.js";
 
 type SetPropertyMap = Map<string, { operator?: string; value: any }>;
 

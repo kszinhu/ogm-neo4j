@@ -1,5 +1,5 @@
 import { temporal, int, types } from "neo4j-driver";
-import { PropertySchema } from "src/types/models";
+import { PropertySchema } from "src/types/models.js";
 
 const temporalTypes = [
   "date",

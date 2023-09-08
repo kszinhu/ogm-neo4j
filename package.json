@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Object-Graph-Mapping for neo4j",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "build": "tspc",
     "build:prod": "npm run test && npm run build",
@@ -34,30 +35,15 @@
     "package.json"
   ],
   "exports": {
+    "./package.json": "./package.json",
+    ".": "./dist",
     "./app": {
-      "import": {
-        "types": "./dist/app/index.d.ts",
-        "default": "./dist/app/index.js"
-      }
+      "import": "./dist/app/index.js",
+      "types": "./dist/app/app.d.ts"
     },
-    "./models": {
-      "import": {
-        "default": "./dist/models/index.js",
-        "types": "./dist/models/index.d.ts"
-      }
-    },
-    "./query": {
-      "import": {
-        "default": "./dist/query/index.js",
-        "types": "./dist/query/index.d.ts"
-      }
-    },
-    "./utils": {
-      "import": {
-        "default": "./dist/utils/index.js",
-        "types": "./dist/utils/index.d.ts"
-      }
-    }
+    "./models": "./dist/models/index.js",
+    "./query": "./dist/query/index.js",
+    "./utils": "./dist/utils/index.js"
   },
   "dependencies": {
     "chevrotain": "^10.5.0",

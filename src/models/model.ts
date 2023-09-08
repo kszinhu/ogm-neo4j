@@ -1,6 +1,6 @@
-import Queryable from "./queryable";
-import Property from "./property";
-import OGM from "../app/app";
+import Queryable from "./queryable.js";
+import Property from "./property.js";
+import OGM from "../app/app.js";
 
 import type {
   ModelSchema,
@@ -9,8 +9,8 @@ import type {
   ProvidedModelSchema,
   ProvidedPropertiesFactory as ProvidedModelProperties,
   ProvidedPropertySchema,
-} from "../types/models";
-import { PropertyType, type PropertyTypes } from "../types/lexer";
+} from "../types/models.js";
+import { PropertyType, type PropertyTypes } from "../types/lexer.js";
 
 class Model<
   K extends string,

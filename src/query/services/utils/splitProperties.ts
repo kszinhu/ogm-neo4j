@@ -1,9 +1,9 @@
-import { Model } from "@models/index";
-import { castValues } from "./toCypher";
-import OGM from "@app/app";
-import { QueryBuilder } from "@query/index";
-import { PropertySchema } from "../../../types/models";
-import { WithParams } from "@query/statements/with";
+import { Model } from "@models/index.js";
+import { castValues } from "./toCypher.js";
+import OGM from "@app/app.js";
+import { QueryBuilder } from "@query/index.js";
+import { PropertySchema } from "../../../types/models.js";
+import { WithParams } from "@query/statements/with.js";
 
 interface splitPropertiesReturn {
   inlineProperties: Map<string, PropertySchema>;

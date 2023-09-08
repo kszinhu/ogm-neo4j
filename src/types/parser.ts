@@ -2,7 +2,7 @@ import {
   type ParserMethod,
   IParserConfig as ChevrotainParserConfig,
 } from "chevrotain";
-import { DirectionTypes, PropertyTypes } from "./lexer";
+import { DirectionTypes, PropertyTypes } from "./lexer.js";
 
 type AttributeKeys = `${PropertyTypes}Attribute`;
 

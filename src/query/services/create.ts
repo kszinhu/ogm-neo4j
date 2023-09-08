@@ -1,5 +1,5 @@
-import OGM from "@app/app";
-import { Model } from "@models/index";
+import OGM from "@app/app.js";
+import { Model } from "@models/index.js";
 
 function GenerateDefaultValuesAsync<M extends Model<any, any>>(
   model: M

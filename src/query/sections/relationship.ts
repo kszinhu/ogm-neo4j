@@ -1,4 +1,4 @@
-import { DirectionTypes } from "src/types/lexer";
+import { DirectionTypes } from "src/types/lexer.js";
 
 type RelationshipDirection = Uppercase<DirectionTypes>;
 

@@ -2,11 +2,11 @@ import {
   ModelIdentifier,
   PropertySchema,
   ProvidedPropertiesFactory,
-} from "../types/models";
+} from "../types/models.js";
 
-import OGM from "@app/app";
-import Builder from "@query/builder";
-import Model from "@models/model";
+import OGM from "@app/app.js";
+import Builder from "@query/builder.js";
+import Model from "@models/model.js";
 
 class Queryable<K extends string, P extends ProvidedPropertiesFactory<K>> {
   #application: OGM;

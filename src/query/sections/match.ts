@@ -1,5 +1,5 @@
-import { Model } from "@models/index";
-import Property from "./property";
+import { Model } from "@models/index.js";
+import Property from "./property.js";
 
 class Match {
   #alias: string;

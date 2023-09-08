@@ -1,5 +1,5 @@
-import Property from "@models/property";
 import { int as castToInt } from "neo4j-driver";
+import Property from "@models/property.js";
 
 export function castValues(property: Property<any>, value: any) {
   if (property.isInteger() && value !== null && value !== undefined) {

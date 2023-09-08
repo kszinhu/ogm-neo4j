@@ -1,5 +1,5 @@
-import { DirectionTypes } from "../types/lexer";
-import type { PropertySchema } from "../types/models";
+import { DirectionTypes } from "../types/lexer.js";
+import type { PropertySchema } from "../types/models.js";
 
 class Property<T extends PropertySchema["type"]> {
   #name: string;

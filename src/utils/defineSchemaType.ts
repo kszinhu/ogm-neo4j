@@ -1,4 +1,7 @@
-import { IEnumType as Enum, IRelationType as Relation } from "src/types/lexer";
+import {
+  IEnumType as Enum,
+  IRelationType as Relation,
+} from "src/types/lexer.js";
 
 const isEnum = (value: any): value is Enum => {
   return value.name && value.permittedValues;

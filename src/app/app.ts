@@ -10,12 +10,12 @@ import neo4j, {
   Integer,
 } from "neo4j-driver";
 
-import { consoleMessage, searchOnDirectory } from "@utils/index";
-import ModelMap from "@models/map";
-import QueryBuilder from "@query/builder";
-import { Model } from "@models/index";
-import { Schema } from "@schema/index";
-import { TransactionError } from "@errors/index";
+import { consoleMessage, searchOnDirectory } from "@utils/index.js";
+import ModelMap from "@models/map.js";
+import QueryBuilder from "@query/builder.js";
+import { Model } from "@models/index.js";
+import { Schema } from "@schema/index.js";
+import { TransactionError } from "@errors/index.js";
 
 export default class OGM {
   #driver!: Driver;

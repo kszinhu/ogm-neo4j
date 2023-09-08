@@ -1,6 +1,6 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import OGM from "../../src/index";
+import { OGM } from "../../src/app";
 
 describe("Create instance using .env variables", () => {
   const ogm = OGM.fromEnv();

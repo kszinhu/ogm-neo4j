@@ -1,4 +1,4 @@
-import { Model } from "@models/index";
+import { Model } from "@models/index.js";
 
 class Create {
   #alias: string;

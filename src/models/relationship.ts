@@ -1,8 +1,8 @@
 import { Integer } from "neo4j-driver";
-import Entity from "./entity";
-import OGM from "@app/app";
-import Model from "./model";
-import Node from "./node";
+import Entity from "./entity.js";
+import OGM from "@app/app.js";
+import Model from "./model.js";
+import Node from "./node.js";
 
 interface RelationshipConstructor<T extends Record<string, any>> {
   identity: Integer;

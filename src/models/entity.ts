@@ -1,5 +1,5 @@
 import { Integer } from "neo4j-driver";
-import { valueToJSON } from "src/utils";
+import { valueToJSON } from "@utils/index.js";
 
 class Entity<T extends Record<string, any>> {
   protected _id: number;

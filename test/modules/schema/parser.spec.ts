@@ -3,10 +3,10 @@ import { expect } from "chai";
 import { ApplicationParser, ApplicationLexer } from "../../../src/schema";
 
 describe("Parser", () => {
-  let tokenizer: ApplicationLexer;
+  let Tokenizer: ApplicationLexer;
 
   setup(() => {
-    tokenizer = new ApplicationLexer(
+    Tokenizer = new ApplicationLexer(
       "test/modules/schema/mocks/schema_example.ogm"
     );
   });
@@ -19,7 +19,7 @@ describe("Parser", () => {
 
   it("It must parse the schema file", () => {
     const parser = new ApplicationParser({ debug: true, outputPath: "./tmp/" });
-    parser.input = tokenizer.tokenizedSchema;
+    parser.input = Tokenizer.tokenizedSchema;
     parser.parse();
 
     expect(parser.schema).to.be.has.property("nodes");

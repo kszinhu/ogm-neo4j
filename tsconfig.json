@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "moduleResolution": "NodeNext",
-    "module": "CommonJS",
-    "target": "ESNext",
+    "moduleResolution": "Node16",
+    "module": "Node16",
+    "target": "ES2022",
     "lib": ["ES2022"],
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -18,7 +18,6 @@
     "outDir": "dist",
     "baseUrl": ".",
     "rootDir": "./src",
-    "typeRoots": ["./node_modules/@types", "./src/types"],
     "paths": {
       "@app/*": ["./src/app/*"],
       "@models/*": ["./src/models/*"],
