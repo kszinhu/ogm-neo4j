@@ -1,6 +1,6 @@
-import Queryable from "./queryable.js";
-import Property from "./property.js";
-import OGM from "../app/app.js";
+import Queryable from "./queryable";
+import Property from "./property";
+import { OGM } from "@app/index";
 
 import type {
   ModelSchema,
@@ -9,23 +9,23 @@ import type {
   ProvidedModelSchema,
   ProvidedPropertiesFactory as ProvidedModelProperties,
   ProvidedPropertySchema,
-} from "../types/models.js";
-import { PropertyType, type PropertyTypes } from "../types/lexer.js";
+} from "../types/models";
+import { PropertyType, type PropertyTypes } from "../types/lexer";
 
 class Model<
   K extends string,
-  P extends ProvidedModelProperties<K & string>
+  P extends ProvidedModelProperties<K & string, K>
 > extends Queryable<K & string, P> {
   #name: string;
   #schema: ModelSchema<any>;
   #properties: Map<
     keyof P & string,
-    Property<Exclude<PropertyTypes, "relation">>
+    Property<Exclude<PropertyTypes, "relation">> // TODO: apply the correct type iterating over the P type
   >;
   #relationships: Map<keyof P & string, Property<PropertyType.relation>>;
   #labels: string[];
 
-  constructor(app: OGM, name: string, schema: ProvidedModelSchema<K>) {
+  constructor(app: OGM, name: string, schema: ProvidedModelSchema<K, K>) {
     super(app);
     this.#name = name;
     this.#schema = this.#transformProvidedSchemaToSchema(schema);
@@ -75,7 +75,7 @@ class Model<
 
   /* @internal */
   #transformProvidedSchemaToSchema(
-    schema: ProvidedModelSchema<K & string>
+    schema: ProvidedModelSchema<K & string, K>
   ): ModelSchema<K> {
     const properties: ModelSchema<K & string>["properties"] = {} as Record<
       K,

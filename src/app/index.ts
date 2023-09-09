@@ -1,1 +1,1 @@
-export { default as OGM } from "./app.js";
+export { default as OGM } from "./app";

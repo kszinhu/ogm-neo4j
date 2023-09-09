@@ -3,15 +3,13 @@
   "version": "0.0.1",
   "description": "Object-Graph-Mapping for neo4j",
   "license": "MIT",
-  "type": "module",
-  "main": "dist/app/index.js",
   "scripts": {
     "build": "tspc",
     "build:prod": "npm run test && npm run build",
     "clean": "tspc -b --clean",
     "prepare": "npm run build",
-    "test:all": "mocha --parallel -r tsconfig-paths/register ./test/**/*.spec.ts",
-    "test": "mocha -r tsconfig-paths/register"
+    "test:all": "export NODE_ENV=test && mocha --parallel -r tsconfig-paths/register ./**/*.spec.ts",
+    "test": "export NODE_ENV=test && mocha -r tsconfig-paths/register"
   },
   "repository": {
     "type": "git",
@@ -30,10 +28,10 @@
   ],
   "exports": {
     ".": "./dist",
-    "./app": "./dist/app/index.js",
-    "./models": "./dist/models/index.js",
-    "./query": "./dist/query/index.js",
-    "./utils": "./dist/utils/index.js"
+    "./app/*": "./dist/app/index.js",
+    "./models/*": "./dist/models/index.js",
+    "./query/*": "./dist/query/index.js",
+    "./utils/*": "./dist/utils/index.js"
   },
   "typesVersions": {
     "*": {

@@ -1,6 +1,6 @@
 import { Integer } from "neo4j-driver";
-import Entity from "./entity.js";
-import { PropertySchema as Property } from "src/types/models.js";
+import Entity from "./entity";
+import { PropertySchema as Property } from "src/types/models";
 
 class Node<T extends Record<string, Property>> extends Entity<T> {
   #labels: string[];

@@ -25,21 +25,25 @@ describe("Create", () => {
         [
           "name",
           {
+            multiple: false,
+            value: "John Doe",
             type: "string",
-            defaultValue: "",
             readonly: false,
             required: true,
             unique: false,
+            properties: undefined,
+            defaultValue: undefined,
+            supportedValues: undefined,
+            target: undefined,
           },
         ],
       ])
     );
 
-    debugger;
+    const buildedQuery = query.build();
 
-    expect(query).instanceOf(Builder);
-    expect(query.toString()).to.be.equal(
-      "CREATE (u:User {name: $u_name}) RETURN u"
-    );
+    expect(buildedQuery).to.has.property("query");
+    expect(buildedQuery).to.has.property("params");
+    expect(buildedQuery.query).to.eql("CREATE (u:User{ name = $u_name })");
   });
 });

@@ -10,17 +10,27 @@ import neo4j, {
   Integer,
 } from "neo4j-driver";
 
-import { consoleMessage, searchOnDirectory } from "@utils/index.js";
-import ModelMap from "@models/map.js";
-import QueryBuilder from "@query/builder.js";
-import { Model } from "@models/index.js";
-import { Schema } from "@schema/index.js";
-import { TransactionError } from "@errors/index.js";
+import { consoleMessage, searchOnDirectory } from "@utils/index";
+import ModelMap from "@models/map";
+import QueryBuilder from "@query/builder";
+import { Model } from "@models/index";
+import { Schema } from "@schema/index";
+import { TransactionError } from "@errors/index";
+
+interface ServerInfo {
+  host: string;
+  port: number;
+  protocol: string;
+  database: string;
+}
 
 export default class OGM {
   #driver!: Driver;
+  #server: ServerInfo = {} as ServerInfo;
   models: ModelMap<Record<string, Model<any, any>>>;
+  // @ts-expect-error
   schema: Schema;
+  // @ts-expect-error
   schemaPath: string;
 
   /**
@@ -34,13 +44,22 @@ export default class OGM {
   ) {
     const auth = neo4j.auth.basic(username, password);
 
-    this.schemaPath = searchOnDirectory(process.cwd());
     this.models = new ModelMap(this);
-    this.schema = new Schema(this);
+
+    if (process.env.NODE_ENV !== "test") {
+      this.schemaPath = searchOnDirectory(process.cwd());
+      this.schema = new Schema(this);
+    }
 
     try {
       consoleMessage({ message: "[OGM] Connecting to the database..." });
 
+      this.#server = {
+        host: connectionString.split("//")[1].split(":")[0],
+        port: parseInt(connectionString.split(":")[2].split("/")[0]),
+        protocol: connectionString.split(":")[0],
+        database: connectionString.split("/")[3] ?? "neo4j",
+      };
       this.#driver = neo4j.driver(connectionString, auth, config);
       this.#verifyConnection();
     } catch (error) {
@@ -57,7 +76,8 @@ export default class OGM {
         message: "[OGM] Applying schema...",
       });
 
-      this.schema.install();
+      // @ts-expect-error
+      if (process.env.NODE_ENV !== "test") this.schema.install();
     } catch (error) {}
   }
 
@@ -78,7 +98,7 @@ export default class OGM {
     if (!username || !password)
       throw new Error("Username or password is missing");
 
-    const default_settings: { [key: string]: string } = {
+    const default_settings: Record<string, string> = {
       NEO4J_ENCRYPTION: "encrypted",
       NEO4J_TRUST: "trust",
       NEO4J_TRUSTED_CERTIFICATES: "trustedCertificates",
@@ -116,7 +136,9 @@ export default class OGM {
       });
 
       consoleMessage({
-        message: "[OGM] Successfully connected to the database",
+        message: `[OGM] Successfully connected to the database at ${
+          this.#server.protocol
+        }://${this.#server.host}:${this.#server.port}`,
         type: "success",
       });
     } catch (error) {
@@ -173,7 +195,10 @@ export default class OGM {
    * Get the session of the database.
    */
   session(mode: SessionMode = neo4j.session.READ): Session {
-    return this.#driver.session({ defaultAccessMode: mode });
+    return this.#driver.session({
+      defaultAccessMode: mode,
+      database: this.#server.database,
+    });
   }
 
   /**
@@ -273,6 +298,13 @@ export default class OGM {
    */
   query(): QueryBuilder {
     return new QueryBuilder(this);
+  }
+
+  /**
+   * Change the database.
+   */
+  useDatabase(database: string): void {
+    this.#server.database = database;
   }
 
   /**

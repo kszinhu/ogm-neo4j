@@ -1,5 +1,5 @@
-import { DirectionTypes } from "../types/lexer.js";
-import type { PropertySchema } from "../types/models.js";
+import { DirectionTypes, PropertyType } from "../types/lexer";
+import type { PropertySchema } from "../types/models";
 
 class Property<T extends PropertySchema["type"]> {
   #name: string;
@@ -14,8 +14,14 @@ class Property<T extends PropertySchema["type"]> {
   #required: boolean;
   // @ts-expect-error
   #hidden: boolean;
-  #direction: undefined | DirectionTypes;
-  #target: undefined | string;
+  // @ts-expect-error
+  #multiple: boolean;
+  // @ts-expect-error
+  #direction: T extends PropertyType.relation ? DirectionTypes : undefined;
+  // @ts-expect-error
+  #properties: T extends PropertyType.relation ? PropertySchema[] : undefined;
+  // @ts-expect-error
+  #target: T extends PropertyType.relation ? string : undefined;
 
   constructor(name: string, schema: PropertySchema) {
     this.#name = name;
@@ -59,6 +65,14 @@ class Property<T extends PropertySchema["type"]> {
 
   get from(): undefined | string {
     return this.#direction === "out" ? this.#target : undefined;
+  }
+
+  get multiple(): boolean {
+    return !!this.#multiple;
+  }
+
+  get properties(): undefined | PropertySchema[] {
+    return this.#properties;
   }
 
   // TODO: implement this feature

@@ -1,12 +1,11 @@
-import Property from "./sections/property.js";
-import Match from "./sections/match.js";
-import WhereStatement from "./statements/where.js";
-import Order from "./sections/order.js";
-import Relationship from "./sections/relationship.js";
+import Property from "./sections/property";
+import Match from "./sections/match";
+import WhereStatement from "./statements/where";
+import Order from "./sections/order";
+import Relationship from "./sections/relationship";
 
-import type { PropertyRelationSchema } from "../types/models.js";
-import type { DirectionTypes } from "../types/lexer.js";
-import RawStatement from "./statements/raw.js";
+import type { DirectionTypes } from "../types/lexer";
+import RawStatement from "./statements/raw";
 
 export interface PropertyRelation {
   name: string;

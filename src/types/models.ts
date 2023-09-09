@@ -1,11 +1,27 @@
-import { Model } from "@models/index.js";
-import type { PropertyType, PropertyTypes } from "./lexer.js";
+import { Model } from "@models/index";
+import type { PropertyType, PropertyTypes } from "./lexer";
+
+/**
+ * Change the type of Keys of T from NewType
+ */
+export type ChangeTypeOfKeys<
+  T extends object,
+  Keys extends keyof T,
+  NewType
+> = {
+  // Loop to every key. We gonna check if the key
+  // is assignable to Keys. If yes, change the type.
+  // Else, retain the type.
+  [key in keyof T]: key extends Keys ? NewType : T[key];
+};
 
 type BasePropertySchema = {
   readonly: boolean;
   unique: boolean;
   required: boolean;
   defaultValue: any;
+  multiple: boolean;
+  value: any;
 };
 
 export type PropertySchema = {
@@ -13,6 +29,8 @@ export type PropertySchema = {
   unique: boolean;
   required: boolean;
   defaultValue: any;
+  multiple: boolean;
+  value: any;
 } & (
   | {
       type: Exclude<PropertyTypes, "relation">;
@@ -33,6 +51,7 @@ export type ProvidedPropertySchema = {
   unique?: boolean;
   required?: boolean;
   defaultValue?: any;
+  multiple?: boolean;
 } & (
   | {
       type: Exclude<PropertyTypes, "relation">;
@@ -44,18 +63,45 @@ export type ProvidedPropertySchema = {
     }
   | {
       type: PropertyType.enum;
+      multiple: boolean;
       supportedValues: string[];
     }
 );
 
-export type ProvidedPropertiesFactory<K extends string> = Record<
+export type IdentifierPropertySchema = {
+  readonly: true;
+  unique: true;
+  required: true;
+  defaultValue?: never;
+  multiple?: never;
+  type: Exclude<
+    PropertyTypes,
+    | PropertyType.relation
+    | PropertyType.enum
+    | PropertyType.boolean
+    | PropertyType.timestamp
+    | PropertyType.point
+    | PropertyType.date
+    | PropertyType.datetime
+    | PropertyType.time
+    | PropertyType.localdatetime
+    | PropertyType.localtime
+  >;
+};
+
+export type ProvidedPropertiesFactory<
+  K extends string,
+  Identifier extends K
+> = Record<
   K & string,
-  ProvidedPropertySchema
+  K & string extends Identifier
+    ? IdentifierPropertySchema | ProvidedPropertySchema
+    : ProvidedPropertySchema
 >;
 
-export interface ProvidedModelSchema<K extends string> {
+export interface ProvidedModelSchema<K extends string, Identifier extends K> {
   labels: string[];
-  properties: ProvidedPropertiesFactory<K & string>;
+  properties: ProvidedPropertiesFactory<K & string, Identifier>;
 }
 
 export interface PropertyRelationSchema extends BasePropertySchema {
@@ -74,10 +120,8 @@ export type ModelProperties<P extends Record<string, PropertySchema>> = P & {
 };
 
 export type ModelIdentifier<M extends Model<any, any>> =
-  M["properties"] extends Map<string, infer V>
-    ? V extends PropertySchema
-      ? V["unique"] extends true
-        ? V
-        : never
+  M["properties"] extends Map<infer K, infer V>
+    ? V extends IdentifierPropertySchema | ProvidedPropertySchema
+      ? V
       : never
     : never;

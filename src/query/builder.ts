@@ -1,19 +1,20 @@
-import OGM from "@app/app.js";
-import Model from "@models/model.js";
-import Property from "@models/property.js";
+import OGM from "@app/app";
+import Model from "@models/model";
+import PropertyModel from "@models/property";
 
-import Statement, { PropertyRelation } from "./statement.js";
+import Statement, { PropertyRelation } from "./statement";
 
-import Match from "./sections/match.js";
-import Order from "./sections/order.js";
-import Where from "./sections/where.js";
-import WithStatement, { type WithParams } from "./statements/with.js";
-import WhereStatement from "./statements/where.js";
-import RawStatement from "./statements/raw.js";
+import Property from "./sections/property";
+import Match from "./sections/match";
+import Order from "./sections/order";
+import Where from "./sections/where";
+import WithStatement, { type WithParams } from "./statements/with";
+import WhereStatement from "./statements/where";
+import RawStatement from "./statements/raw";
 
-import type { PropertySchema } from "../types/models.js";
-import WhereId from "./sections/whereId.js";
-import WhereBetween from "./sections/whereBetween.js";
+import type { PropertySchema } from "../types/models";
+import WhereId from "./sections/whereId";
+import WhereBetween from "./sections/whereBetween";
 
 type SetPropertyMap = Map<string, { operator?: string; value: any }>;
 
@@ -40,6 +41,9 @@ class Builder {
     return { query, params: this.#params };
   }
 
+  /**
+   * Create a new record of this model.
+   */
   create(
     alias: string,
     model: Model<any, any> | string,
@@ -61,6 +65,9 @@ class Builder {
     return this;
   }
 
+  /**
+   * Delete a node
+   */
   delete(...fields: string[]): Builder {
     this.#currentStatement?.delete(...fields);
 
@@ -312,24 +319,29 @@ class Builder {
    * Build the query string
    */
   #query() {
-    this.whereStatement();
+    // this.whereStatement();
     this.statement();
 
     return this.#statements.map((statement) => statement.toString()).join("\n");
   }
 
-  #convertPropertyMap(alias: string, properties?: Map<string, PropertySchema>) {
+  #convertPropertyMap(
+    alias: string,
+    properties?: Map<string, PropertySchema>
+  ): Property[] {
     if (!properties?.size) return [];
 
-    Object.entries(properties).forEach(
-      ([key, value]: [string, PropertySchema]) => {
-        const propertyAlias = `${alias}_${key}`;
+    return [...properties.entries()].map(([key, schema]) => {
+      const { value } = schema;
 
-        this.#params[propertyAlias] = value;
+      if (!value) return;
 
-        return new Property(key, value);
-      }
-    );
+      const propertyAlias = `${alias}_${key}`;
+
+      this.#params[propertyAlias] = value;
+
+      return new Property(key, propertyAlias);
+    }) as Property[];
   }
 
   #addWhereParameter(key, value) {

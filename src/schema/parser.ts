@@ -1,6 +1,6 @@
 import { EmbeddedActionsParser } from "chevrotain";
 
-import type { PropertyTypes } from "../types/lexer.js";
+import type { PropertyTypes } from "../types/lexer";
 import type {
   NodeApp,
   Property,
@@ -9,10 +9,10 @@ import type {
   ParserConfig,
   ParserRules,
   SchemaAppParser,
-} from "../types/parser.js";
+} from "../types/parser";
 
-import SchemaTokenizer from "./lexer.js";
-import { createIfNotExists as createDebugFile } from "@utils/debugFiles.js";
+import SchemaTokenizer from "./lexer";
+import { createIfNotExists as createDebugFile } from "@utils/debugFiles";
 
 /**
  * Responsible for parsing the schema file and generate the schema of the database.

@@ -1,9 +1,10 @@
-import { Model } from "@models/index.js";
-import { castValues } from "./toCypher.js";
-import OGM from "@app/app.js";
-import { QueryBuilder } from "@query/index.js";
-import { PropertySchema } from "../../../types/models.js";
-import { WithParams } from "@query/statements/with.js";
+import { Model } from "@models/index";
+import Property from "@models/property";
+import OGM from "@app/app";
+import { QueryBuilder } from "@query/index";
+import { castValues } from "./toCypher";
+import { PropertySchema } from "../../../types/models";
+import { PropertyType } from "../../../types/lexer";
 
 interface splitPropertiesReturn {
   inlineProperties: Map<string, PropertySchema>;
@@ -13,18 +14,17 @@ interface splitPropertiesReturn {
 }
 
 function splitProperties<M extends Model<any, any>>(
-  model: M
+  model: M,
+  properties: Record<keyof M["properties"], any>
 ): splitPropertiesReturn {
   const inlineProperties: Map<string, PropertySchema> = new Map(),
     setProperties: Map<string, PropertySchema> = new Map(),
     onCreateProperties: Map<string, PropertySchema> = new Map();
 
-  model.properties.forEach((property, _key, properties) => {
+  model.properties.forEach((property, _key) => {
     const { name } = property;
 
-    if (!name || !properties.has(name)) {
-      return;
-    }
+    if (!name || !properties.has(name)) return;
 
     const value = castValues(property, properties.get(name));
 
@@ -49,6 +49,7 @@ export function addNodeToStatement<M extends Model<any, any>>(
   app: OGM,
   builder: QueryBuilder,
   model: M,
+  properties: Record<keyof M["properties"], any>,
   alias: string,
   aliases: string[] = []
 ) {
@@ -57,7 +58,7 @@ export function addNodeToStatement<M extends Model<any, any>>(
     setProperties,
     onCreateProperties: onCreate,
     onMatchProperties: onMatch,
-  } = splitProperties(model);
+  } = splitProperties(model, properties);
 
   if (!aliases.includes(alias)) {
     aliases.push(alias);
@@ -95,7 +96,7 @@ export function addNodeToStatement<M extends Model<any, any>>(
     builder.set(SetPropertyMap);
   }
 
-  model.relationships.forEach((relationship, key) => {
+  model.relationships.forEach((relationship, key, relationships) => {
     if (!model.properties.has(key)) {
       return;
     }
@@ -121,43 +122,86 @@ export function addNodeToStatement<M extends Model<any, any>>(
       );
     }
 
-    const {
-      inlineProperties: inlineProperties,
-      setProperties: setProperties,
-      onCreateProperties: onCreate,
-      onMatchProperties: onMatch,
-    } = splitProperties(target);
+    const relations = {
+      multiple() {
+        const index = properties.keys().indexOf(key);
 
-    builder.create(target_alias, target, inlineProperties);
+        addRelationshipToStatement(
+          app,
+          builder,
+          alias,
+          relation_alias + index,
+          target_alias + index,
+          relationship,
+          properties.get(key),
+          aliases
+        );
+      },
+      single() {
+        addRelationshipToStatement(
+          app,
+          builder,
+          alias,
+          relation_alias,
+          target_alias,
+          relationship,
+          properties.get(key),
+          aliases
+        );
+      },
+    };
 
-    if (onCreate.size) {
-      const SetPropertyMap = new Map();
-
-      onCreate.forEach((value, key) => {
-        SetPropertyMap.set(key, { value });
-      });
-
-      builder.onCreateSet(SetPropertyMap);
-    }
-
-    if (onMatch.size) {
-      const SetPropertyMap = new Map();
-
-      onMatch.forEach((value, key) => {
-        SetPropertyMap.set(key, { value });
-      });
-
-      builder.onMatchSet(SetPropertyMap);
-    }
-
-    if (setProperties.size) {
-      const SetPropertyMap = new Map();
-
-      setProperties.forEach((value, key) => {
-        SetPropertyMap.set(key, { value });
-      });
-
-      builder.set(SetPropertyMap);
-    }
+    relations[relationship.multiple ? "multiple" : "single"]();
   });
+}
+
+export function addRelationshipToStatement<M extends Model<any, any>>(
+  app: OGM,
+  builder: QueryBuilder,
+  alias: string,
+  relationAlias: string,
+  targetAlias: string,
+  relationship: Property<PropertyType.relation>,
+  value: any,
+  aliases: string[] = []
+) {
+  const { direction, properties, target } = relationship;
+
+  if (!target || !properties || Array.isArray(target)) {
+    throw new Error(
+      `Cannot create a relationship without a target model and properties`
+    );
+  }
+
+  if (!aliases.includes(alias)) {
+    aliases.push(alias);
+  }
+
+  if (!aliases.includes(targetAlias)) {
+    aliases.push(targetAlias);
+  }
+
+  const targetModel = app.models.get(target);
+
+  if (!targetModel) {
+    throw new Error(
+      `Cannot create a relationship to an unknown model ${target}`
+    );
+  }
+
+  builder.create(
+    relationAlias,
+    targetModel,
+    new Map(Object.entries(properties))
+  );
+
+  builder.match(targetAlias, targetModel, new Map([["id", value]]));
+
+  builder.with({ withs: aliases });
+
+  if (direction === "in") {
+    builder.create(alias, targetModel, new Map([["id", value]]));
+  } else {
+    builder.create(targetAlias, targetModel, new Map([["id", value]]));
+  }
 }

@@ -1,9 +1,9 @@
 import { Session } from "neo4j-driver";
-import OGM from "@app/app.js";
-import { ApplicationLexer, ApplicationParser } from "./index.js";
-import { SchemaOfApplication } from "../types/parser.js";
-import { Model } from "@models/index.js";
-import consoleMessage from "@utils/cliMessages.js";
+import OGM from "@app/app";
+import { ApplicationLexer, ApplicationParser } from "./index";
+import { SchemaOfApplication } from "../types/parser";
+import { Model } from "@models/index";
+import consoleMessage from "@utils/cliMessages";
 
 type Query =
   | string

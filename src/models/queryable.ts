@@ -2,13 +2,14 @@ import {
   ModelIdentifier,
   PropertySchema,
   ProvidedPropertiesFactory,
-} from "../types/models.js";
+} from "../types/models";
 
-import OGM from "@app/app.js";
-import Builder from "@query/builder.js";
-import Model from "@models/model.js";
+import OGM from "@app/app";
+import Builder from "@query/builder";
+import Model from "@models/model";
+import Create from "@query/services/create";
 
-class Queryable<K extends string, P extends ProvidedPropertiesFactory<K>> {
+class Queryable<K extends string, P extends ProvidedPropertiesFactory<K, K>> {
   #application: OGM;
 
   constructor(app: OGM) {
@@ -36,8 +37,9 @@ class Queryable<K extends string, P extends ProvidedPropertiesFactory<K>> {
   /**
    * Create a new record of this model.
    */
-  async create(data: P): Promise<boolean> {
-    throw new Error("Not implemented");
+  async create(data: P): Promise<void> {
+    // Queryable is a generic class, so we need to cast this to a Model<K, P>
+    Create(this.#application, this as unknown as Model<K, P>, data as any);
   }
 
   /**

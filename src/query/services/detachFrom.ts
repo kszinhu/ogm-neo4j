@@ -1,6 +1,6 @@
-import OGM from "@app/app.js";
-import Node from "@models/node.js";
-import { queries } from "@query/queries.js";
+import OGM from "@app/app";
+import Node from "@models/node";
+import { queries } from "@query/queries";
 
 export function DetachFrom(app: OGM, from: Node<any>, to: Node<any>) {
   const params = {

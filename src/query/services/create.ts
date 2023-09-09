@@ -1,5 +1,6 @@
-import OGM from "@app/app.js";
-import { Model } from "@models/index.js";
+import OGM from "@app/app";
+import { Model } from "@models/index";
+import { addNodeToStatement } from "./utils/splitProperties";
 
 function GenerateDefaultValuesAsync<M extends Model<any, any>>(
   model: M
@@ -23,11 +24,18 @@ function GenerateDefaultValuesAsync<M extends Model<any, any>>(
 
 export default async function Create<M extends Model<any, any>>(
   app: OGM,
-  model: M
+  model: M,
+  properties: Record<
+    keyof M["properties"],
+    // TODO: convert property to Typescript type
+    // M["properties"][keyof M["properties"]]
+    any
+  >
 ) {
   return await GenerateDefaultValuesAsync(model).then((values) => {
-    const builder = app.query();
+    const builder = app.query(),
+      alias = "this";
 
-    // add
+    addNodeToStatement(app, builder, model, properties, alias, [alias]);
   });
 }
