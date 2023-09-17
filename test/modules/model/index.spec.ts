@@ -69,4 +69,13 @@ describe("Model", () => {
       expect(nodesMap.size).to.be.equal(2);
     });
   });
+
+  describe("#find", () => {
+    it("It must return a model node", async () => {
+      const node = await model.find(12);
+
+      expect(node).to.be.an("object");
+      expect(node.get("name")).to.be.equal("John Doe");
+    });
+  });
 });

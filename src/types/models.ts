@@ -153,12 +153,14 @@ export type ModelProperties<P extends Record<string, PropertySchema>> = P & {
   labels: string[];
 };
 
-export type ModelIdentifier<M extends Model<any, any>> =
-  M["properties"] extends Map<infer K, infer V>
-    ? V extends IdentifierPropertySchema | ProvidedPropertySchema
-      ? V
-      : never
-    : never;
+export type ModelIdentifier<
+  P extends ProvidedPropertiesFactory<any, any>,
+  S extends Record<string, any>
+> = P extends ProvidedPropertiesFactory<infer K, infer Identifier>
+  ? Identifier extends K
+    ? S[Identifier]
+    : never
+  : never;
 
 export interface EntityResult<M extends Model<any, any>> {
   identity: number;

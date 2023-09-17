@@ -1,4 +1,5 @@
 import {
+  IdentifierPropertySchema,
   ModelIdentifier,
   PropertySchema,
   ProvidedModelSchema,
@@ -12,6 +13,9 @@ import Entity from "@models/entity";
 import Create from "@query/services/create";
 import FindAll, { SearchOptions } from "@query/services/findAll";
 import Formatter from "@query/formatter";
+import First from "@query/services/first";
+
+type FormattedResponse<Data extends Record<string, any>> = Map<string, Data>;
 
 class Queryable<
   Schema extends Record<string, any>,
@@ -66,9 +70,7 @@ class Queryable<
   /**
    * Delete a record of this model by it's identifier.
    */
-  async delete<M extends Model<Schema, P>>(
-    identifier: ModelIdentifier<M>
-  ): Promise<boolean> {
+  async delete(identifier: ModelIdentifier<P, Schema>): Promise<boolean> {
     throw new Error("Not implemented");
   }
 
@@ -82,20 +84,18 @@ class Queryable<
   /**
    * Get a collection of all records of this model.
    */
-  async all(
-    options: SearchOptions<Schema>
-  ): Promise<Map<string, Record<string, any>>>;
+  async all(options: SearchOptions<Schema>): Promise<FormattedResponse<Schema>>;
   async all(
     properties?: (keyof Schema & string)[] | (keyof Schema & string),
     options?: SearchOptions<Schema>
-  ): Promise<Map<string, Record<string, any>>>;
+  ): Promise<FormattedResponse<Schema>>;
   async all(
     arg1?:
       | SearchOptions<Schema>
       | (keyof Schema & string)[]
       | (keyof Schema & string),
     arg2?: SearchOptions<Schema>
-  ): Promise<Map<string, Record<string, any>>> {
+  ): Promise<FormattedResponse<Schema>> {
     // Queryable is a generic class, so we need to cast this to a Model<K, P>
     if (Array.isArray(arg1) || typeof arg1 === "string") {
       return await FindAll<Schema, P>(
@@ -129,29 +129,38 @@ class Queryable<
   /**
    * Find a record of this model by it's identifier.
    */
-  async find<M extends Model<Schema, P>>(
-    identifier: ModelIdentifier<M>
-  ): Promise<M | undefined> {
-    throw new Error("Not implemented");
+  async find(
+    identifier: ModelIdentifier<P, Schema>
+  ): Promise<FormattedResponse<Schema>> {
+    return this.first("id", identifier);
   }
 
   /**
    * Find a record of this model by it's internal ID (neo4j ID).
    */
-  async findByID<M extends Model<Schema, P>>(
-    id: string
-  ): Promise<M | undefined> {
+  async findByID(id: string): Promise<FormattedResponse<Schema>> {
     throw new Error("Not implemented");
   }
 
   /**
    * Find a record by a property.
    */
-  async first<M extends Model<Schema, P>>(
-    key: keyof P,
-    value: P[keyof P]
-  ): Promise<M | undefined> {
-    throw new Error("Not implemented");
+  async first(
+    key: keyof Schema & string,
+    value: Schema[keyof Schema]
+  ): Promise<FormattedResponse<Schema>> {
+    return First<Schema, P>(
+      this.#application,
+      this as unknown as Model<Schema, P>,
+      key,
+      value
+    )
+      .then((result) => {
+        return this._formatter.format(result);
+      })
+      .catch((error) => {
+        throw error;
+      });
   }
 }
 
