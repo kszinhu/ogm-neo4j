@@ -1,3 +1,5 @@
+import { ZodSchema, z } from "zod";
+
 import Queryable from "./queryable";
 import Property from "./property";
 import { OGM } from "@app/index";
@@ -121,6 +123,40 @@ class Model<
   }
 
   /**
+   * Client-side validation of the provided schema.
+   */
+  #validate(data: Record<string, any>) {
+    const schemaValidation: Record<string, ZodSchema<any>> = Object.entries(
+      this.#schema.properties
+    ).reduce((acc, [name, property]) => {
+      if (!this.#isProvidedSchema(property))
+        throw new Error("Invalid provided schema");
+
+      const normalizeKey = {
+        string: "string",
+        boolean: "boolean",
+        float: "bigint",
+        integer: "number",
+        date: "date",
+      };
+
+      let propertyValidation: ZodSchema<any> = z[
+        property.multiple ? "array" : normalizeKey[property.type]
+      ](property.multiple ? z[property.type]() : undefined);
+
+      if (!property.required)
+        propertyValidation = propertyValidation.optional();
+
+      return {
+        ...acc,
+        [name]: propertyValidation,
+      };
+    }, {});
+
+    return z.object(schemaValidation).parse(data);
+  }
+
+  /**
    * Get the name of this model.
    */
   get name() {
@@ -191,6 +227,12 @@ class Model<
     this.#schema.labels = labels.sort();
 
     return this;
+  }
+
+  create(data: Schema) {
+    this.#validate(data);
+
+    return super.create(data);
   }
 }
 
