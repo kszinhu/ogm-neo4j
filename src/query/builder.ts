@@ -84,7 +84,7 @@ class Builder {
       case "READ":
         const readSession = this.#app.readSession();
 
-        await readSession
+        return await readSession
           .executeRead((transaction) => transaction.run(query, params))
           .then((response) => {
             readSession.close();
@@ -94,7 +94,7 @@ class Builder {
       case "WRITE":
         const writeSession = this.#app.writeSession();
 
-        await writeSession
+        return await writeSession
           .executeWrite((transaction) => transaction.run(query, params))
           .then((response) => {
             writeSession.close();
@@ -103,6 +103,9 @@ class Builder {
     }
   }
 
+  /**
+   * Set the properties of the node
+   */
   set(properties: SetPropertyMap): Builder {
     properties.forEach(({ value, operator = "=" }, key) => {
       this.#currentStatement?.set(key, value, operator);
@@ -111,12 +114,18 @@ class Builder {
     return this;
   }
 
+  /**
+   * Limit the number of results
+   */
   limit(limit: number): Builder {
     this.#currentStatement?.limit(limit);
 
     return this;
   }
 
+  /**
+   * Match a node
+   */
   match(
     alias: string,
     model: Model<any, any> | string,
@@ -126,12 +135,19 @@ class Builder {
     this.statement();
 
     this.#currentStatement?.match(
-      new Match(alias, model, this.#convertPropertyMap(alias, properties))
+      new Match(
+        alias,
+        model,
+        this.#convertPropertyMap(alias, properties, "MATCH")
+      )
     );
 
     return this;
   }
 
+  /**
+   * On create set the properties of the node
+   */
   onCreateSet(properties: SetPropertyMap): Builder {
     properties.forEach(({ value, operator = "=" }, key) => {
       this.#currentStatement?.onCreateSet(key, value, operator);
@@ -140,6 +156,9 @@ class Builder {
     return this;
   }
 
+  /**
+   * On match set the properties of the node
+   */
   onMatchSet(properties: SetPropertyMap): Builder {
     properties.forEach(({ value, operator = "=" }, key) => {
       this.#currentStatement?.onMatchSet(key, value, operator);
@@ -148,6 +167,9 @@ class Builder {
     return this;
   }
 
+  /**
+   * Or where clause
+   */
   or(...args: string[]) {
     this.whereStatement("OR");
 
@@ -199,6 +221,9 @@ class Builder {
   }
 
   skip(skip: number): Builder {
+    if (skip < 0) throw new Error("Skip must be a positive integer");
+    else if (skip == 0) return this;
+
     this.#currentStatement?.skip(skip);
 
     return this;
@@ -319,7 +344,6 @@ class Builder {
    * Build the query string
    */
   #query() {
-    // this.whereStatement();
     this.statement();
 
     return this.#statements.map((statement) => statement.toString()).join("\n");
@@ -327,20 +351,19 @@ class Builder {
 
   #convertPropertyMap(
     alias: string,
-    properties?: Map<string, PropertySchema>
+    properties?: Map<string, any>,
+    mode: "CREATE" | "MATCH" = "MATCH"
   ): Property[] {
     if (!properties?.size) return [];
 
-    return [...properties.entries()].map(([key, schema]) => {
-      const { value } = schema;
-
+    return [...properties.entries()].map(([key, value]) => {
       if (!value) return;
 
       const propertyAlias = `${alias}_${key}`;
 
       this.#params[propertyAlias] = value;
 
-      return new Property(key, propertyAlias);
+      return new Property(key, propertyAlias, mode == "CREATE" ? "=" : ":");
     }) as Property[];
   }
 

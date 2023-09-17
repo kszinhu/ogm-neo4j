@@ -6,11 +6,7 @@ class Node<T extends Record<string, Property>> extends Entity<T> {
   #labels: string[];
   #deleted: boolean = false;
 
-  constructor(
-    identity: Integer,
-    labels: string[],
-    properties: Map<keyof T, T[keyof T]>
-  ) {
+  constructor(identity: Integer, labels: string[], properties: T) {
     super(identity, properties);
 
     this.#labels = labels;

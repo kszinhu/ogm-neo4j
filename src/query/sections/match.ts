@@ -27,7 +27,9 @@ class Match {
     }
 
     if (this.#properties.length > 0) {
-      properties = `{ ${this.#properties.map((p) => p.toString()).join(",")} }`;
+      properties = `{ ${this.#properties
+        .map((p) => p && p.toString())
+        .join(",")} }`;
     }
 
     return `(${this.#alias}${model}${properties})`;

@@ -4,7 +4,7 @@ import { expect } from "chai";
 import Builder from "../../../src/query/builder";
 import { OGM } from "../../../src/app";
 
-describe("Create Statement on QueryBuilder", () => {
+describe("Return Statement on QueryBuilder", () => {
   let QueryBuilder: Builder;
 
   setup(async () => {
@@ -17,8 +17,8 @@ describe("Create Statement on QueryBuilder", () => {
     });
   });
 
-  it("It must create a node", () => {
-    const query = QueryBuilder.create(
+  it("It must return a full match query", () => {
+    const query = QueryBuilder.match(
       "u",
       "User",
       new Map([
@@ -38,12 +38,14 @@ describe("Create Statement on QueryBuilder", () => {
           },
         ],
       ])
-    );
+    ).return("u");
 
     const buildedQuery = query.build();
 
     expect(buildedQuery).to.has.property("query");
     expect(buildedQuery).to.has.property("params");
-    expect(buildedQuery.query).to.eql("CREATE (u:User{ name : $u_name })");
+    expect(buildedQuery.query).to.eql(
+      "MATCH (u:User{ name : $u_name })\nRETURN u"
+    );
   });
 });

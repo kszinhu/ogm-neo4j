@@ -15,7 +15,7 @@ interface splitPropertiesReturn {
 
 function splitProperties<M extends Model<any, any>>(
   model: M,
-  properties: Record<keyof M["properties"], any>
+  properties: Record<string, any>
 ): splitPropertiesReturn {
   const inlineProperties: Map<string, PropertySchema> = new Map(),
     setProperties: Map<string, PropertySchema> = new Map(),
@@ -24,9 +24,9 @@ function splitProperties<M extends Model<any, any>>(
   model.properties.forEach((property, _key) => {
     const { name } = property;
 
-    if (!name || !properties.has(name)) return;
+    if (!name || !properties[name]) return;
 
-    const value = castValues(property, properties.get(name));
+    const value = castValues(property, properties[name]);
 
     inlineProperties.set(name, value);
 
@@ -49,7 +49,7 @@ export function addNodeToStatement<M extends Model<any, any>>(
   app: OGM,
   builder: QueryBuilder,
   model: M,
-  properties: Record<keyof M["properties"], any>,
+  properties: Record<string, any>,
   alias: string,
   aliases: string[] = []
 ) {

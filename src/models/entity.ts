@@ -1,14 +1,14 @@
 import { Integer } from "neo4j-driver";
 import { valueToJSON } from "@utils/index";
 
-class Entity<T extends Record<string, any>> {
+class Entity<Schema extends Record<string, any>> {
   protected _id: number;
   protected _identity: Integer;
-  protected _properties: Map<keyof T, T[keyof T]>;
+  protected _properties: Map<keyof Schema, Schema[keyof Schema]>;
 
-  constructor(identity: Integer, properties: Map<keyof T, T[keyof T]>) {
+  constructor(identity: Integer, properties: Schema) {
     this._identity = identity;
-    this._properties = properties;
+    this._properties = new Map(Object.entries(properties));
     this._id = identity.toNumber();
   }
 
@@ -20,7 +20,7 @@ class Entity<T extends Record<string, any>> {
     return this._identity;
   }
 
-  get(property: keyof T, or?: any) {
+  get(property: keyof Schema, or?: any) {
     if (this._properties.has(property)) return this._properties.get(property);
 
     return or || null;

@@ -10,81 +10,72 @@ import neo4j, {
   Integer,
 } from "neo4j-driver";
 
-import { consoleMessage, searchOnDirectory } from "@utils/index";
+import { searchOnDirectory } from "@utils/index";
 import ModelMap from "@models/map";
 import QueryBuilder from "@query/builder";
+import { Database } from "@config/index";
 import { Model } from "@models/index";
 import { Schema } from "@schema/index";
 import { TransactionError } from "@errors/index";
-
-interface ServerInfo {
-  host: string;
-  port: number;
-  protocol: string;
-  database: string;
-}
+import { DatabaseConstructorParams } from "@config/database";
 
 export default class OGM {
-  #driver!: Driver;
-  #server: ServerInfo = {} as ServerInfo;
-  models: ModelMap<Record<string, Model<any, any>>>;
+  version = process.env.npm_package_version ?? "0.0.1";
+  agentName = `OGM/${this.version}`;
+
+  // @ts-expect-error
+  #database: Database;
   // @ts-expect-error
   schema: Schema;
   // @ts-expect-error
   schemaPath: string;
+  models: ModelMap<Record<string, Model<any, any>>>;
 
   /**
    * The constructor of the OGM class.
    */
-  constructor(
-    connectionString: string,
-    username: string,
-    password: string,
-    config: Config
-  ) {
-    const auth = neo4j.auth.basic(username, password);
-
+  constructor() {
     this.models = new ModelMap(this);
 
     if (process.env.NODE_ENV !== "test") {
       this.schemaPath = searchOnDirectory(process.cwd());
       this.schema = new Schema(this);
     }
+  }
 
-    try {
-      consoleMessage({ message: "[OGM] Connecting to the database..." });
+  static async build(
+    connectionString: string,
+    username: string,
+    password: string,
+    config: Config
+  ): Promise<OGM> {
+    const app = new OGM();
 
-      this.#server = {
+    await app
+      .#setDatabase({
+        config,
+        username,
+        password,
         host: connectionString.split("//")[1].split(":")[0],
         port: parseInt(connectionString.split(":")[2].split("/")[0]),
         protocol: connectionString.split(":")[0],
         database: connectionString.split("/")[3] ?? "neo4j",
-      };
-      this.#driver = neo4j.driver(connectionString, auth, config);
-      this.#verifyConnection();
-    } catch (error) {
-      consoleMessage({
-        message: "[OGM] Error connecting to the database",
-        type: "error",
-        exit: true,
-        error: error as string,
-      });
-    }
-
-    try {
-      consoleMessage({
-        message: "[OGM] Applying schema...",
+      })
+      .then(() => {
+        if (process.env.NODE_ENV !== "test") app.schema.install();
       });
 
-      // @ts-expect-error
-      if (process.env.NODE_ENV !== "test") this.schema.install();
-    } catch (error) {}
+    return app;
+  }
+
+  async #setDatabase(args: DatabaseConstructorParams) {
+    this.#database = await Database.init(this, args);
   }
 
   /**
    * Generate instance using .env file configuration
    */
-  static fromEnv(): OGM {
+  static async fromEnv(): Promise<OGM> {
     dotenv.config();
 
     const connectionString =
@@ -98,63 +89,14 @@ export default class OGM {
     if (!username || !password)
       throw new Error("Username or password is missing");
 
-    const default_settings: Record<string, string> = {
-      NEO4J_ENCRYPTION: "encrypted",
-      NEO4J_TRUST: "trust",
-      NEO4J_TRUSTED_CERTIFICATES: "trustedCertificates",
-      NEO4J_KNOWN_HOSTS: "knownHosts",
-      NEO4J_MAX_CONNECTION_POOLSIZE: "maxConnectionPoolSize",
-      NEO4J_MAX_TRANSACTION_RETRY_TIME: "maxTransactionRetryTime",
-      NEO4J_LOAD_BALANCING_STRATEGY: "loadBalancingStrategy",
-      NEO4J_MAX_CONNECTION_LIFETIME: "maxConnectionLifetime",
-      NEO4J_CONNECTION_TIMEOUT: "connectionTimeout",
-      NEO4J_DISABLE_LOSSLESS_INTEGERS: "disableLosslessIntegers",
-      NEO4J_LOGGING_LEVEL: "logging",
-    };
-
-    const config = Object.keys(default_settings).reduce((acc, key) => {
-      if (process.env[key]) {
-        acc[default_settings[key]] = process.env[key] as string;
-      }
-
-      return acc;
-    }, {} as { [key: string]: string });
-
-    return new OGM(connectionString, username, password, config);
+    return await OGM.build(connectionString, username, password, {});
   }
-
-  /* @internal */
-  #verifyConnection = async () => {
-    try {
-      await this.#driver.verifyAuthentication().catch((error) => {
-        consoleMessage({
-          message: `[OGM] Error connecting to the database \n ${error}`,
-          type: "error",
-          exit: true,
-        });
-        process.exit(-1);
-      });
-
-      consoleMessage({
-        message: `[OGM] Successfully connected to the database at ${
-          this.#server.protocol
-        }://${this.#server.host}:${this.#server.port}`,
-        type: "success",
-      });
-    } catch (error) {
-      consoleMessage({
-        message: `[OGM] Error connecting to the database \n ${error}`,
-        type: "error",
-        exit: true,
-      });
-    }
-  };
 
   /**
    * Close the connection to the database.
    */
   close(): void {
-    this.#driver.close();
+    this.#database.close();
   }
 
   /**
@@ -195,10 +137,7 @@ export default class OGM {
    * Get the session of the database.
    */
   session(mode: SessionMode = neo4j.session.READ): Session {
-    return this.#driver.session({
-      defaultAccessMode: mode,
-      database: this.#server.database,
-    });
+    return this.#database.session(mode);
   }
 
   /**
@@ -219,7 +158,8 @@ export default class OGM {
    * Create a transaction.
    */
   transaction(): Transaction & { success: () => Promise<void> } {
-    const session = this.#driver.session();
+    const session = this.#database.session();
+
     // @ts-expect-error
     const transaction: Transaction & { success: () => Promise<void> } =
       session.beginTransaction();
@@ -304,7 +244,7 @@ export default class OGM {
    * Change the database.
    */
   useDatabase(database: string): void {
-    this.#server.database = database;
+    this.#database.useDatabase(database);
   }
 
   /**

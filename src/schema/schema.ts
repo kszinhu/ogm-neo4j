@@ -31,10 +31,14 @@ class Schema {
   }
 
   install() {
+    consoleMessage({ message: "[OGM] Applying schema..." });
+
     return this.#installSchema(this.#app);
   }
 
   drop() {
+    consoleMessage({ message: "[OGM] Dropping schema..." });
+
     return this.#dropSchema(this.#app);
   }
 

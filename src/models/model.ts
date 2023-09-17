@@ -13,9 +13,12 @@ import type {
 import { PropertyType, type PropertyTypes } from "../types/lexer";
 
 class Model<
-  K extends string,
-  P extends ProvidedModelProperties<K & string, K>
-> extends Queryable<K & string, P> {
+  Schema extends Record<string, any>,
+  P extends ProvidedModelProperties<
+    keyof Schema & string,
+    keyof Schema & string
+  >
+> extends Queryable<Schema, P> {
   #name: string;
   #schema: ModelSchema<any>;
   #properties: Map<
@@ -25,8 +28,12 @@ class Model<
   #relationships: Map<keyof P & string, Property<PropertyType.relation>>;
   #labels: string[];
 
-  constructor(app: OGM, name: string, schema: ProvidedModelSchema<K, K>) {
-    super(app);
+  constructor(
+    app: OGM,
+    name: string,
+    schema: ProvidedModelSchema<keyof Schema & string, keyof Schema & string>
+  ) {
+    super(app, schema);
     this.#name = name;
     this.#schema = this.#transformProvidedSchemaToSchema(schema);
     this.#properties = new Map();
@@ -57,7 +64,7 @@ class Model<
   }
 
   /* @internal */
-  #transformSchemaToModel(schema: ModelSchema<K & string>) {
+  #transformSchemaToModel(schema: ModelSchema<keyof Schema & string>) {
     for (const [name, property] of Object.entries(schema.properties)) {
       if (!this.#isPropertySchema(property)) {
         throw new Error("Invalid property schema");
@@ -75,12 +82,10 @@ class Model<
 
   /* @internal */
   #transformProvidedSchemaToSchema(
-    schema: ProvidedModelSchema<K & string, K>
-  ): ModelSchema<K> {
-    const properties: ModelSchema<K & string>["properties"] = {} as Record<
-      K,
-      PropertySchema
-    >;
+    schema: ProvidedModelSchema<keyof Schema & string, keyof Schema & string>
+  ): ModelSchema<keyof Schema & string> {
+    const properties: ModelSchema<keyof Schema & string>["properties"] =
+      {} as Record<keyof Schema, PropertySchema>;
 
     for (let [name, property] of Object.entries(schema.properties)) {
       if (!this.#isProvidedSchema(property)) {
@@ -101,10 +106,11 @@ class Model<
 
       switch (property.type) {
         case PropertyType.relation:
-          properties[name] = property as PropertyRelationSchema;
+          properties[name as keyof Schema & string] =
+            property as PropertyRelationSchema;
           break;
         default:
-          properties[name] = property;
+          properties[name as keyof Schema & string] = property;
       }
     }
 

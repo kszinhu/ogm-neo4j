@@ -1,6 +1,8 @@
+export type LogLevel = "error" | "success" | "info" | "normal" | "debug";
+
 interface ICliMessageArgs {
   message: string;
-  type?: "error" | "success" | "info" | "normal" | "debug";
+  type?: LogLevel;
   exit?: boolean;
   error?: string;
 }

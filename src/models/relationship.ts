@@ -9,7 +9,7 @@ interface RelationshipConstructor<T extends Record<string, any>> {
   name: string;
   app: OGM;
   relationSchema: Record<string, any>; // TODO: Define schema type
-  properties: Map<keyof T, T[keyof T]>;
+  properties: T;
 }
 
 class Relationship<T extends Record<string, any>> extends Entity<T> {

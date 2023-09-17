@@ -18,6 +18,7 @@
     "rootDir": "./src",
     "paths": {
       "@app/*": ["./src/app/*"],
+      "@config/*": ["./src/config/*"],
       "@models/*": ["./src/models/*"],
       "@query/*": ["./src/query/*"],
       "@schema/*": ["./src/schema/*"],

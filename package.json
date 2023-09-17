@@ -28,10 +28,10 @@
   ],
   "exports": {
     ".": "./dist",
-    "./app/*": "./dist/app/index.js",
-    "./models/*": "./dist/models/index.js",
-    "./query/*": "./dist/query/index.js",
-    "./utils/*": "./dist/utils/index.js"
+    "./app": "./dist/app/index.js",
+    "./models": "./dist/models/index.js",
+    "./query": "./dist/query/index.js",
+    "./utils": "./dist/utils/index.js"
   },
   "typesVersions": {
     "*": {

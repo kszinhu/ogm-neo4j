@@ -1,4 +1,5 @@
 import { Model } from "@models/index";
+import { EnumMember } from "typescript";
 import type { PropertyType, PropertyTypes } from "./lexer";
 
 /**
@@ -14,6 +15,37 @@ export type ChangeTypeOfKeys<
   // Else, retain the type.
   [key in keyof T]: key extends Keys ? NewType : T[key];
 };
+
+/**
+ * Get a property type and return Typescript type
+ *
+ * @deprecated
+ */
+export type PropertyTypeToType<T extends string> = T extends PropertyType.string
+  ? string
+  : T extends PropertyType.integer
+  ? number
+  : T extends PropertyType.decimal
+  ? number
+  : T extends PropertyType.boolean
+  ? boolean
+  : T extends PropertyType.timestamp
+  ? Date
+  : T extends PropertyType.point
+  ? [number, number]
+  : T extends PropertyType.date
+  ? Date
+  : T extends PropertyType.datetime
+  ? Date
+  : T extends PropertyType.time
+  ? Date
+  : T extends PropertyType.localdatetime
+  ? Date
+  : T extends PropertyType.localtime
+  ? Date
+  : T extends PropertyType.enum
+  ? string
+  : never;
 
 type BasePropertySchema = {
   readonly: boolean;
@@ -33,7 +65,7 @@ export type PropertySchema = {
   value: any;
 } & (
   | {
-      type: Exclude<PropertyTypes, "relation">;
+      type: Exclude<PropertyType[number], PropertyType.relation>;
     }
   | {
       type: PropertyType.relation;
@@ -54,7 +86,7 @@ export type ProvidedPropertySchema = {
   multiple?: boolean;
 } & (
   | {
-      type: Exclude<PropertyTypes, "relation">;
+      type: Exclude<PropertyType[number], PropertyType.relation>;
     }
   | {
       type: PropertyType.relation;
@@ -75,7 +107,7 @@ export type IdentifierPropertySchema = {
   defaultValue?: never;
   multiple?: never;
   type: Exclude<
-    PropertyTypes,
+    PropertyType,
     | PropertyType.relation
     | PropertyType.enum
     | PropertyType.boolean
@@ -89,15 +121,17 @@ export type IdentifierPropertySchema = {
   >;
 };
 
+// if the key is equal to the identifier, then property is IdentifierPropertySchema else ProvidedPropertySchema
 export type ProvidedPropertiesFactory<
-  K extends string,
-  Identifier extends K
-> = Record<
-  K & string,
-  K & string extends Identifier
-    ? IdentifierPropertySchema | ProvidedPropertySchema
-    : ProvidedPropertySchema
->;
+  Keys extends string,
+  Identifier extends Keys
+> = {
+  [key in Keys]: Identifier extends key
+    ? IdentifierPropertySchema
+    : ProvidedPropertySchema;
+};
+
+// TODO: create a properties factory to get a simple interface and create provided properties
 
 export interface ProvidedModelSchema<K extends string, Identifier extends K> {
   labels: string[];
@@ -125,3 +159,10 @@ export type ModelIdentifier<M extends Model<any, any>> =
       ? V
       : never
     : never;
+
+export interface EntityResult<M extends Model<any, any>> {
+  identity: number;
+  elementId: `${number}:${string}:${number}`;
+  labels: M["labels"];
+  properties: Record<keyof M["properties"], any>;
+}
