@@ -1,9 +1,5 @@
-export default class ValidationError extends Error {
-  errors: any[];
-  name = "VALIDATION_ERROR";
+import { OGMError } from "./base";
 
-  constructor(errors: any[]) {
-    super("Validation error");
-    this.errors = errors;
-  }
+export default class ValidationError extends OGMError {
+  name = "VALIDATION_ERROR";
 }

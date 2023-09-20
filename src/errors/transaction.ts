@@ -1,15 +1,5 @@
-interface ErrorConstructorParams {
-  cause: string;
-  message?: string;
-  stack?: string;
-}
+import { OGMError } from "./base";
 
-export default class TransactionError extends Error {
+export default class TransactionError extends OGMError {
   name = "TRANSACTION_ERROR";
-
-  constructor({ cause, message, stack }: ErrorConstructorParams) {
-    super(message ? (message as string) : "Transaction error");
-
-    this.stack = stack;
-  }
 }
