@@ -17,6 +17,7 @@ export enum PropertyType {
 }
 
 export type PropertyTypes =
+  | "UUID"
   | "integer"
   | "decimal"
   | "string"
@@ -32,6 +33,8 @@ export type PropertyTypes =
   | "point";
 
 export type TokensName =
+  | "BooleanReserved"
+  | "UUIDReserved"
   | "NodeReserved"
   | "RelationshipReserved"
   | "EnumReserved"
@@ -70,6 +73,8 @@ export type TokensName =
   | "DateTimeLiteral"
   | "TimeLiteral"
   | "LocationLiteral"
+  | "BooleanLiteral"
+  | "UUIDLiteral"
   | "Comment";
 
 export interface IEnumType {

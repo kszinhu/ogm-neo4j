@@ -48,6 +48,7 @@ export type PropertyTypeToType<T extends string> = T extends PropertyType.string
   : never;
 
 type BasePropertySchema = {
+  primaryKey: boolean;
   readonly: boolean;
   unique: boolean;
   required: boolean;
@@ -57,6 +58,7 @@ type BasePropertySchema = {
 };
 
 export type PropertySchema = {
+  primaryKey: boolean;
   readonly: boolean;
   unique: boolean;
   required: boolean;
@@ -79,6 +81,7 @@ export type PropertySchema = {
 );
 
 export type ProvidedPropertySchema = {
+  primaryKey?: boolean;
   readonly?: boolean;
   unique?: boolean;
   required?: boolean;
@@ -103,6 +106,7 @@ export type ProvidedPropertySchema = {
 export type IdentifierPropertySchema = {
   readonly: true;
   unique: true;
+  primaryKey: true;
   required: true;
   defaultValue?: never;
   multiple?: never;

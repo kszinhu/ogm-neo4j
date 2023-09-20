@@ -51,10 +51,15 @@ class Schema {
         type: "debug",
       });
 
-      const nodeModel = new Model(app, node.identifier, {
-        labels: [node.identifier],
-        properties: node.properties as any,
-      });
+      const nodeModel = new Model(
+        app,
+        node.identifier,
+        {
+          labels: [node.identifier],
+          properties: node.properties as any,
+        },
+        "node"
+      );
 
       consoleMessage({
         message: `Define Model: ${nodeModel.name}`,
@@ -70,10 +75,15 @@ class Schema {
         type: "debug",
       });
 
-      const relationModel = new Model(app, relation.identifier, {
-        labels: [relation.identifier],
-        properties: relation.properties as any,
-      });
+      const relationModel = new Model(
+        app,
+        relation.identifier,
+        {
+          labels: [relation.identifier],
+          properties: relation.properties as any,
+        },
+        "relationship"
+      );
 
       app.models.set(relation.identifier, relationModel);
     });
@@ -84,8 +94,9 @@ class Schema {
           queries.push(this.#constraints.unique(name, property.name, "CREATE"));
         } else if (property.required) {
           queries.push(this.#constraints.exists(name, property.name, "CREATE"));
+        } else if (property.indexed) {
+          queries.push(this.#constraints.index(name, property.name, "CREATE"));
         }
-        // TODO: add index schema support
       });
     });
 
@@ -101,10 +112,14 @@ class Schema {
           queries.push(this.#constraints.unique(name, property.name, "DROP"));
         } else if (property.required) {
           queries.push(this.#constraints.exists(name, property.name, "DROP"));
+        } else if (property.indexed) {
+          queries.push(this.#constraints.index(name, property.name, "DROP"));
         }
-        // TODO: add index schema support
       });
     });
+
+    queries.push("MATCH (N) -[R] -> () DELETE N, R");
+    queries.push("MATCH (N) DELETE N");
 
     const session = app.writeSession();
 
@@ -134,29 +149,6 @@ class Schema {
         reject(e);
       });
   }
-
-  // #transformSchema(
-  //   schema: SchemaOfApplication["nodes"] | SchemaOfApplication["relations"]
-  // ) {
-  //   schema.forEach((model) => {
-  //     // if
-  //     Object.entries(model.properties).forEach(
-  //       ([propertyIdentifier, propertyConfig]) => {
-  //         // if propertyConfig.type is "enum" change values to "supportedValues"
-  //         return {
-  //           ...propertyConfig,
-  //           default: propertyConfig.default ?? false,
-  //           required: propertyConfig.required ?? false,
-  //           unique: propertyConfig.unique ?? false,
-  //           multiple: propertyConfig.multiple ?? false,
-  //           relation: propertyConfig.relation,
-  //           type: propertyConfig.type,
-  //           values: propertyConfig.values ?? [],
-  //         } as unknown as ProvidedPropertiesFactory<keyof typeof propertyConfig & string>;
-  //       }
-  //     );
-  //   });
-  // }
 
   #constraints = {
     unique: (label: string, property: string, mode: string = "CREATE") => {

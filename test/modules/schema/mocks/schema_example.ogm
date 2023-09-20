@@ -2,7 +2,7 @@
 // ----------------
 
 Node User {
-  id:         String
+  id:         UUID                   @identifier
   cpf:        String
   email:      String
   username:   String
@@ -18,7 +18,7 @@ Node User {
 }
 
 Node Pilot {
-  id:         String
+  id:         Int                        @identifier(auto: true)
   cpf:        String
   email:      String
   username:   String
@@ -40,7 +40,7 @@ Node Pilot {
 }
 
 Node Fly_Attendant {
-  cpf:                      String
+  cpf:                      String    @identifier
   name:                     String
   last_name:                String
   rg:                       String?
@@ -52,29 +52,29 @@ Node Fly_Attendant {
   vaccination_number:       Int
   passport_number:          Int
   work_registration_number: Int
-  flights:                  [Flight] @relation(name: "fly_attendant")
+  flights:                  [Flight]  @relation(name: "fly_attendant")
 }
 
 Node Ticket {
-  id:    String
+  id:    UUID  @identifier(auto: true)
   price: Decimal
 }
 
 Node Company {
-  cnpj:    String
+  cnpj:    String  @identifier
   name:    String
   contact: String
   planes:  [Plane] @relation(name: "planes_owned", direction: "in")
 }
 
 Node Terminal {
-  id:       Int
+  id:       Int     @identifier(auto: true)
   capacity: Int
   airport:  Airport @relation(direction: "out")
 }
 
 Node Plane {
-  id:               String
+  id:               UUID  @identifier(auto: true)
   capacity:         Int
   model:            String
   manufacture_date: Date
@@ -82,26 +82,26 @@ Node Plane {
 }
 
 Node Location {
-  id:       Int
+  id:       Int       @identifier(auto: true)
   name:     String
   airports: [Airport]
 }
 
 Node Airport {
-  id:        Int
+  id:        Int        @identifier(auto: true)
   name:      String
   address:   String
   terminals: [Terminal]
 }
 
 Node Flight {
-  id:          Int
+  id:          Int      @identifier(auto: true)
   departure:   Date
   arrival:     Date
   terminal:    Terminal
   plane:       Plane
-  origin:      Airport @relation(direction: "out")
-  destination: Airport @relation(direction: "out")
+  origin:      Airport  @relation(direction: "out")
+  destination: Airport  @relation(direction: "out")
 }
 
 // Relationships

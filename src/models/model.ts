@@ -21,6 +21,7 @@ class Model<
     keyof Schema & string
   >
 > extends Queryable<Schema, P> {
+  entity: "node" | "relationship" = "node";
   #name: string;
   #schema: ModelSchema<any>;
   #properties: Map<
@@ -29,11 +30,13 @@ class Model<
   >;
   #relationships: Map<keyof P & string, Property<PropertyType.relation>>;
   #labels: string[];
+  #primaryKey?: keyof P & string;
 
   constructor(
     app: OGM,
     name: string,
-    schema: ProvidedModelSchema<keyof Schema & string, keyof Schema & string>
+    schema: ProvidedModelSchema<keyof Schema & string, keyof Schema & string>,
+    type?: "node" | "relationship"
   ) {
     super(app, schema);
     this.#name = name;
@@ -43,6 +46,8 @@ class Model<
     this.#labels = schema.labels.sort();
 
     this.#transformSchemaToModel(this.#schema);
+
+    this.entity = type ?? "node";
   }
 
   /* @internal */
@@ -79,6 +84,8 @@ class Model<
         default:
           this.addProperty(name, property);
       }
+
+      if (property.primaryKey) this.#primaryKey = name as keyof P & string;
     }
   }
 
@@ -96,6 +103,7 @@ class Model<
 
       property = {
         ...property,
+        primaryKey: property.primaryKey ?? false,
         readonly: property.readonly ?? false,
         unique: property.unique ?? false,
         required: property.required ?? false,
@@ -154,6 +162,10 @@ class Model<
     }, {});
 
     return z.object(schemaValidation).parse(data);
+  }
+
+  get primaryKey(): (keyof P & string) | undefined {
+    return this.#primaryKey;
   }
 
   /**

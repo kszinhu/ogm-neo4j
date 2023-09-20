@@ -13,6 +13,7 @@ import type {
 
 import SchemaTokenizer from "./lexer";
 import { createIfNotExists as createDebugFile } from "@utils/debugFiles";
+import { SchemaError } from "@errors/index";
 
 /**
  * Responsible for parsing the schema file and generate the schema of the database.
@@ -20,6 +21,8 @@ import { createIfNotExists as createDebugFile } from "@utils/debugFiles";
  * Using the Chevrotain parser generator to consume the tokens from the tokenizer.
  */
 class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
+  #currentNode: string | null = null;
+
   /**
    * Rules for Schema Language.
    */
@@ -58,15 +61,21 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       > | null = null;
 
       this.CONSUME(SchemaTokenizer.namedTokens.NodeReserved);
-      const identifier = this.CONSUME(SchemaTokenizer.namedTokens.Identifier);
+      const identifier = this.CONSUME(
+        SchemaTokenizer.namedTokens.Identifier
+      ).image;
+
       this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
+
+      this.#currentNode = identifier;
+
       this.OPTION(() => {
         properties = this.SUBRULE(this.rules.nodeProperties);
       });
       this.CONSUME(SchemaTokenizer.namedTokens.ClosingBrace);
 
       return {
-        identifier: identifier.image,
+        identifier,
         ...((properties && { properties }) || {}),
       } as NodeApp;
     }),
@@ -106,6 +115,22 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         if (property) properties[identifier] = property;
       });
 
+      // check if has least one primary key
+      if (
+        (Object.values(properties).reduce(
+          (acc, curr) => !!(acc || curr.primaryKey),
+          false
+        ) as unknown as boolean) === false &&
+        !this.RECORDING_PHASE
+      ) {
+        throw new SchemaError({
+          cause: "No primary key found",
+          message: `No primary key found in node ${
+            this.#currentNode
+          }\n At least one primary key is required`,
+        });
+      }
+
       return properties;
     }),
 
@@ -128,7 +153,8 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
     }),
 
     nodeProperty: this.RULE("nodeProperty", () => {
-      let relationArguments: { [key: string]: string } | null = null,
+      let relationArguments: Record<string, any> | undefined = undefined,
+        identifierArguments: Record<string, any> | undefined = undefined,
         openingBracket: string | null = null,
         closingBracket: string | null = null,
         optionalQuestionMark: string | null = null;
@@ -157,15 +183,30 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       this.OPTION4(() => {
         relationArguments = this.SUBRULE(this.rules.relationArgs);
       });
+      this.OPTION5(() => {
+        identifierArguments = this.SUBRULE(this.rules.identifierArgs);
+      });
 
       if (
         attribute.type !== "relation" &&
         relationArguments &&
         !this.RECORDING_PHASE
       ) {
-        throw new Error(
-          `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`
-        );
+        throw new SchemaError({
+          cause: "Invalid relation arguments",
+          message: `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`,
+        });
+      }
+
+      if (
+        !SchemaTokenizer.supportedIdentifierTypes.includes(attribute.type) &&
+        identifierArguments &&
+        !this.RECORDING_PHASE
+      ) {
+        throw new SchemaError({
+          cause: "Invalid identifier arguments",
+          message: `Invalid identifier arguments\n Expected UUID type\n Got: ${attribute.type}`,
+        });
       }
 
       return {
@@ -176,6 +217,17 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
           options: { relation: relationArguments },
         }) ||
           {}),
+        ...((!!identifierArguments && {
+          primaryKey: true,
+          options: {
+            identifier: {
+              ...(identifierArguments as Record<string, any>),
+              auto:
+                attribute.type === "UUID" ||
+                (identifierArguments as Record<string, any>)?.auto,
+            },
+          },
+        }) || { primaryKey: false }),
       } as Property;
     }),
 
@@ -215,9 +267,10 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         relationArguments &&
         !this.RECORDING_PHASE
       ) {
-        throw new Error(
-          `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`
-        );
+        throw new SchemaError({
+          cause: "Invalid relation arguments",
+          message: `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`,
+        });
       }
 
       return {
@@ -246,6 +299,7 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         { ALT: () => this.SUBRULE(this.rules.localdatetimeAttribute) },
         { ALT: () => this.SUBRULE(this.rules.localtimeAttribute) },
         { ALT: () => this.SUBRULE(this.rules.pointAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.UUIDAttribute) },
       ]);
     }),
 
@@ -315,6 +369,12 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       return { type: "time" as PropertyTypes };
     }),
 
+    UUIDAttribute: this.RULE("UUIDAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.UUIDReserved);
+
+      return { type: "UUID" as PropertyTypes };
+    }),
+
     enumAttribute: this.RULE("enumAttribute", () => {
       this.CONSUME(SchemaTokenizer.namedTokens.EnumReserved);
       this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
@@ -372,6 +432,67 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       return { type: "relation" as PropertyTypes, node: identifier.image };
     }),
 
+    identifierArgs: this.RULE("identifierArgs", () => {
+      // @identifier(auto: true) | @identifier | @identifier()
+      let args: { [key: string]: string } = {};
+
+      this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
+      this.CONSUME(SchemaTokenizer.namedTokens.IdentifierReserved);
+      this.OPTION(() => {
+        this.CONSUME(SchemaTokenizer.namedTokens.OpeningParenthesis);
+        this.OPTION1(() => {
+          args = this.SUBRULE(this.rules.identifierArgsList);
+        });
+        this.CONSUME(SchemaTokenizer.namedTokens.ClosingParenthesis);
+      });
+
+      if (args["auto"] === undefined && !this.RECORDING_PHASE)
+        args["auto"] = "false";
+
+      return args;
+    }),
+
+    identifierArgsList: this.RULE("identifierArgsList", () => {
+      const args: { [key: string]: string } = {};
+
+      this.MANY_SEP({
+        SEP: SchemaTokenizer.namedTokens.Comma,
+        DEF: () => {
+          const argument: { name: string; value: string } = this.SUBRULE(
+            this.rules.identifierArg
+          );
+
+          args[argument.name] = argument.value;
+        },
+      });
+
+      return args;
+    }),
+
+    identifierArg: this.RULE("identifierArg", () => {
+      const parameter = this.CONSUME(
+        SchemaTokenizer.namedTokens.Identifier
+      ).image;
+
+      if (
+        !SchemaTokenizer.identifierParams.includes(parameter) &&
+        !this.RECORDING_PHASE
+      ) {
+        throw new SchemaError({
+          cause: "Invalid identifier argument",
+          message: `Invalid identifier argument\n Expected one of: ${SchemaTokenizer.identifierParams.join(
+            ", "
+          )}\n Got: ${parameter}`,
+        });
+      }
+
+      this.CONSUME(SchemaTokenizer.namedTokens.Colon);
+
+      const value = this.CONSUME(SchemaTokenizer.namedTokens.BooleanLiteral);
+
+      return { name: parameter, value: value.image };
+    }),
+
     relationArgs: this.RULE("relationArgs", () => {
       // @relation(name: "name", direction: "IN")
       this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
@@ -412,11 +533,12 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         !SchemaTokenizer.relationParams.includes(parameter) &&
         !this.RECORDING_PHASE
       ) {
-        throw new Error(
-          `Invalid relation argument\n Expected one of: ${SchemaTokenizer.relationParams.join(
+        throw new SchemaError({
+          cause: "Invalid relation argument",
+          message: `Invalid relation argument\n Expected one of: ${SchemaTokenizer.relationParams.join(
             ", "
-          )}\n Got: ${parameter}`
-        );
+          )}\n Got: ${parameter}`,
+        });
       }
 
       this.CONSUME(SchemaTokenizer.namedTokens.Colon);
@@ -465,14 +587,20 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
 
   parse() {
     if (this.input.length === 0) {
-      throw new Error("No input provided");
+      throw new SchemaError({
+        cause: "Empty schema",
+        message: "Empty schema, check the file",
+      });
     }
 
     // @ts-expect-error
     const schema: Schema | undefined = this.schemaParser();
 
     if (!schema || this.errors.length > 0) {
-      throw new Error(`Invalid schema, check the errors above\n${this.errors}`);
+      throw new SchemaError({
+        cause: "Invalid schema",
+        message: `Invalid schema, check the errors above\n${this.errors}`,
+      });
     }
 
     if (this.#config?.debug && this.#config.outputPath) {

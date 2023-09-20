@@ -32,7 +32,10 @@ class Queryable<
     schema: ProvidedModelSchema<keyof Schema & string, keyof Schema & string>
   ) {
     this.#application = app;
-    this._formatter = new Formatter(schema);
+    this._formatter = new Formatter(
+      this as unknown as Model<Schema, P>,
+      schema
+    );
   }
 
   /* @internal */

@@ -13,9 +13,14 @@ type AttributesRules = {
   >;
 };
 
-type EmbeddedActions = {
-  [key in keyof ParserRules]: ParserRules[key];
-};
+export enum RelationArgs {
+  name = "name",
+  direction = "direction",
+}
+
+export enum IdentifierArgs {
+  auto = "auto",
+}
 
 export interface ParserRules extends AttributesRules {
   schemaParser: ParserMethod<[], SchemaOfApplication>;
@@ -27,6 +32,11 @@ export interface ParserRules extends AttributesRules {
   relationProperty: ParserMethod<[], Property>;
   attribute: ParserMethod<[], { type: PropertyTypes; values?: string[] }>;
   enumValues: ParserMethod<[], string[]>;
+  // @identifier | @identifier(auto: true)
+  identifierArgsList: ParserMethod<[], { [key: string]: string }>;
+  identifierArgs: ParserMethod<[], { [key: string]: string }>;
+  identifierArg: ParserMethod<[], { name: string; value: string }>;
+  // @relation(name: "name", direction: "OUT")
   relationArgsList: ParserMethod<[], { [key: string]: string }>;
   relationArgs: ParserMethod<[], { [key: string]: string }>;
   relationArg: ParserMethod<[], { name: string; value: string }>;
@@ -39,12 +49,16 @@ export type ParserConfig = ChevrotainParserConfig & {
 
 export interface Property {
   type: PropertyTypes;
-  values?: string[]; // for enum
+  primaryKey?: boolean;
   required?: boolean;
-  default?: any;
   unique?: boolean;
   multiple?: boolean;
+  values?: string[]; // for enum
+  default?: any;
   relation?: { name?: string; direction?: DirectionTypes };
+  options?:
+    | { relation: { name?: string; direction?: DirectionTypes } }
+    | { identifier: { auto?: boolean } };
 }
 
 export interface RelationApp {

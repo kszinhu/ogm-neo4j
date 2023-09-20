@@ -5,6 +5,10 @@ class Property<T extends PropertySchema["type"]> {
   #name: string;
   #defaultValue: any;
   // @ts-expect-error
+  #primaryKey: boolean;
+  // @ts-expect-error
+  #indexed: boolean;
+  // @ts-expect-error
   #type: T;
   // @ts-expect-error
   #readonly: boolean;
@@ -45,6 +49,10 @@ class Property<T extends PropertySchema["type"]> {
 
   get readonly(): boolean {
     return !!this.#readonly;
+  }
+
+  get indexed(): boolean {
+    return !!(this.#primaryKey || this.#indexed);
   }
 
   get unique(): boolean {

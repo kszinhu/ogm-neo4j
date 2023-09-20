@@ -1,5 +1,5 @@
 Node User {
-  id:         String
+  id:         UUID             @identifier(auto: true)
   cpf:        String
   email:      String
   username:   String
@@ -9,7 +9,7 @@ Node User {
   sex:        Enum { M, F, X }
   birth_at:   Date
   address:    Location
-  tickets:    [Ticket] @relation(name: "bought_by", direction: "in")
+  tickets:    [Ticket]         @relation(name: "bought_by", direction: "in")
   created_at: Date
   updated_at: Date
 }
