@@ -145,7 +145,7 @@ export default class Database {
   #isLocalhost() {
     const { host } = this.#configurations;
 
-    const hostNames = ["localhost", "127.0.0.1", "[::1]"];
+    const hostNames = ["localhost", "127.0.0.1", "0.0.0.0", "[::1]"];
 
     return hostNames.includes(host);
   }
