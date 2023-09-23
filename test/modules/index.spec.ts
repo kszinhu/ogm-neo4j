@@ -1,15 +1,23 @@
-import { describe, it } from "mocha";
+import { describe, it, setup } from "mocha";
 import { expect } from "chai";
-import OGM from "../../src/index";
+import { OGM } from "../../src/app";
 
 describe("Create instance using .env variables", () => {
-  const ogm = OGM.fromEnv();
+  let app: OGM;
+
+  setup(async () => {
+    return new Promise(async (resolve) => {
+      app = await OGM.fromEnv();
+
+      resolve();
+    });
+  });
 
   after(() => {
-    ogm.close();
+    app.close();
   });
 
   it("should be an instance of OGM", () => {
-    expect(ogm).to.be.an.instanceof(OGM);
+    expect(app).to.be.an.instanceof(OGM);
   });
 });

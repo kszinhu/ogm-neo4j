@@ -4,12 +4,12 @@
   "description": "Object-Graph-Mapping for neo4j",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "tspc",
     "build:prod": "npm run test && npm run build",
-    "clean": "tsc -b --clean",
+    "clean": "tspc -b --clean",
     "prepare": "npm run build",
-    "test:all": "mocha --parallel -r tsconfig-paths/register ./test/**/*.spec.ts",
-    "test": "mocha -r tsconfig-paths/register"
+    "test:all": "NODE_ENV=test mocha --parallel -r tsconfig-paths/register ./**/*.spec.ts",
+    "test": "NODE_ENV=test mocha -r tsconfig-paths/register"
   },
   "repository": {
     "type": "git",
@@ -18,12 +18,43 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "author": {
     "name": "Cassiano Henrique Aparecido Rodrigues",
     "email": "kszinhu@modscleo4.dev.br"
+  },
+  "files": [
+    "dist/",
+    "package.json"
+  ],
+  "exports": {
+    ".": "./dist",
+    "./app": "./dist/app/index.js",
+    "./models": "./dist/models/index.js",
+    "./query": "./dist/query/index.js",
+    "./errors": "./dist/errors/index.js",
+    "./utils": "./dist/utils/index.js"
+  },
+  "typesVersions": {
+    "*": {
+      "app": [
+        "./dist/app/index.d.ts"
+      ],
+      "models": [
+        "./dist/models/index.d.ts"
+      ],
+      "query": [
+        "./dist/query/index.d.ts"
+      ],
+      "utils": [
+        "./dist/utils/index.d.ts"
+      ],
+      "errors": [
+        "./dist/errors/index.d.ts"
+      ],
+      "*": [
+        "./dist/*.d.ts"
+      ]
+    }
   },
   "dependencies": {
     "chevrotain": "^10.5.0",
@@ -39,10 +70,10 @@
     "dotenv": "^16.0.3",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
-    "tsconfig-paths": "^4.2.0"
+    "ts-patch": "^3.0.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript-transform-paths": "^3.4.6"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "bugs": {
     "url": "https://github.com/kszinhu/ogm-neo4j/issues"
   },

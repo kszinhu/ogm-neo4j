@@ -13,11 +13,25 @@ type AttributesRules = {
   >;
 };
 
-type EmbeddedActions = {
-  [key in keyof ParserRules]: ParserRules[key];
-};
+export enum RelationArgs {
+  name = "name",
+  direction = "direction",
+}
 
-interface ParserRules extends AttributesRules {
+export enum IdentifierArgs {
+  auto = "auto",
+}
+
+interface IdentifierArgsList {
+  auto?: boolean;
+}
+
+interface RelationArgsList {
+  name?: string;
+  direction?: DirectionTypes;
+}
+
+export interface ParserRules extends AttributesRules {
   schemaParser: ParserMethod<[], SchemaOfApplication>;
   nodeDeclaration: ParserMethod<[], NodeApp>;
   relationDeclaration: ParserMethod<[], RelationApp>;
@@ -27,6 +41,13 @@ interface ParserRules extends AttributesRules {
   relationProperty: ParserMethod<[], Property>;
   attribute: ParserMethod<[], { type: PropertyTypes; values?: string[] }>;
   enumValues: ParserMethod<[], string[]>;
+  // @hidden
+  hiddenProperty: ParserMethod<[], boolean>;
+  // @identifier | @identifier(auto: true)
+  identifierArgsList: ParserMethod<[], { [key: string]: any }>;
+  identifierArgs: ParserMethod<[], { [key: string]: any }>;
+  identifierArg: ParserMethod<[], { name: string; value: string}>;
+  // @relation(name: "name", direction: "OUT")
   relationArgsList: ParserMethod<[], { [key: string]: string }>;
   relationArgs: ParserMethod<[], { [key: string]: string }>;
   relationArg: ParserMethod<[], { name: string; value: string }>;
@@ -39,12 +60,17 @@ export type ParserConfig = ChevrotainParserConfig & {
 
 export interface Property {
   type: PropertyTypes;
-  values?: string[]; // for enum
+  primaryKey?: boolean;
   required?: boolean;
-  default?: any;
   unique?: boolean;
   multiple?: boolean;
-  relation?: { name?: string; direction?: DirectionTypes };
+  values?: string[]; // for enum
+  default?: any;
+  relation?: { name?: string; direction?: DirectionTypes }; // TODO: format property
+  options: {
+    hidden: boolean;
+    identifier?: IdentifierArgsList;
+  };
 }
 
 export interface RelationApp {
@@ -63,8 +89,10 @@ export interface SchemaOfApplication {
 }
 
 declare abstract class SchemaAppParser {
-  constructor(config?: ParserConfig);
   abstract rules: ParserRules;
-  parse: () => void;
-  schema: SchemaOfApplication | null;
+  abstract parse: () => void;
+
+  constructor(config?: ParserConfig);
 }
+
+export { SchemaAppParser };

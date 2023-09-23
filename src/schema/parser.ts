@@ -1,18 +1,19 @@
-import { existsSync, mkdirSync, openSync, writeSync } from "fs";
-import { EmbeddedActionsParser, Rule } from "chevrotain";
+import { EmbeddedActionsParser } from "chevrotain";
 
-import type { PropertyTypes } from "types/lexer";
-import {
+import type { PropertyTypes } from "../types/lexer";
+import type {
+  NodeApp,
+  Property,
+  RelationApp,
+  SchemaOfApplication as Schema,
+  ParserConfig,
+  ParserRules,
   SchemaAppParser,
-  type NodeApp,
-  type Property,
-  type RelationApp,
-  type SchemaOfApplication as Schema,
-  type ParserConfig,
-} from "types/parser";
+} from "../types/parser";
 
 import SchemaTokenizer from "./lexer";
-import { createIfNotExists as createDebugFile } from "utils/debugFiles";
+import { createIfNotExists as createDebugFile } from "@utils/debugFiles";
+import { SchemaError } from "@errors/index";
 
 /**
  * Responsible for parsing the schema file and generate the schema of the database.
@@ -20,10 +21,12 @@ import { createIfNotExists as createDebugFile } from "utils/debugFiles";
  * Using the Chevrotain parser generator to consume the tokens from the tokenizer.
  */
 class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
+  #currentNode: string | null = null;
+
   /**
    * Rules for Schema Language.
    */
-  rules: SchemaAppParser["rules"] = {
+  rules: ParserRules = {
     schemaParser: this.RULE("schemaParser", () => {
       const nodes: Schema["nodes"] = new Map(),
         relations: Schema["relations"] = new Map();
@@ -58,15 +61,21 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       > | null = null;
 
       this.CONSUME(SchemaTokenizer.namedTokens.NodeReserved);
-      const identifier = this.CONSUME(SchemaTokenizer.namedTokens.Identifier);
+      const identifier = this.CONSUME(
+        SchemaTokenizer.namedTokens.Identifier
+      ).image;
+
       this.CONSUME(SchemaTokenizer.namedTokens.OpeningBrace);
+
+      this.#currentNode = identifier;
+
       this.OPTION(() => {
         properties = this.SUBRULE(this.rules.nodeProperties);
       });
       this.CONSUME(SchemaTokenizer.namedTokens.ClosingBrace);
 
       return {
-        identifier: identifier.image,
+        identifier,
         ...((properties && { properties }) || {}),
       } as NodeApp;
     }),
@@ -106,6 +115,22 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         if (property) properties[identifier] = property;
       });
 
+      // check if has least one primary key
+      if (
+        (Object.values(properties).reduce(
+          (acc, curr) => !!(acc || curr.primaryKey),
+          false
+        ) as unknown as boolean) === false &&
+        !this.RECORDING_PHASE
+      ) {
+        throw new SchemaError({
+          cause: "No primary key found",
+          message: `No primary key found in node ${
+            this.#currentNode
+          }\n At least one primary key is required`,
+        });
+      }
+
       return properties;
     }),
 
@@ -128,10 +153,12 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
     }),
 
     nodeProperty: this.RULE("nodeProperty", () => {
-      let relationArguments: { [key: string]: string } | null = null,
+      let relationArguments: Record<string, any> | null = null,
+        identifierArguments: Property["options"]["identifier"] | null = null,
         openingBracket: string | null = null,
         closingBracket: string | null = null,
-        optionalQuestionMark: string | null = null;
+        isOptional: boolean | null = null,
+        isHidden: boolean | null = null;
 
       this.OPTION1(() => {
         openingBracket = this.CONSUME1(
@@ -149,7 +176,7 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       });
 
       this.OPTION3(() => {
-        optionalQuestionMark = this.CONSUME2(
+        isOptional = !!this.CONSUME2(
           SchemaTokenizer.namedTokens.OptionalOperator
         ).image;
       });
@@ -157,25 +184,45 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       this.OPTION4(() => {
         relationArguments = this.SUBRULE(this.rules.relationArgs);
       });
+      this.OPTION5(() => {
+        identifierArguments = this.SUBRULE(this.rules.identifierArgs);
+      });
+      this.OPTION6(() => {
+        isHidden = this.SUBRULE(this.rules.hiddenProperty);
+      });
 
       if (
         attribute.type !== "relation" &&
         relationArguments &&
         !this.RECORDING_PHASE
       ) {
-        throw new Error(
-          `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`
-        );
+        throw new SchemaError({
+          cause: "Invalid relation arguments",
+          message: `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`,
+        });
+      }
+
+      if (
+        !SchemaTokenizer.supportedIdentifierTypes.includes(attribute.type) &&
+        identifierArguments &&
+        !this.RECORDING_PHASE
+      ) {
+        throw new SchemaError({
+          cause: "Invalid identifier arguments",
+          message: `Invalid identifier arguments\n Expected UUID type\n Got: ${attribute.type}`,
+        });
       }
 
       return {
         ...attribute,
+        primaryKey: identifierArguments !== null,
         ...((!!openingBracket && !!closingBracket && { multiple: true }) || {}),
-        ...((!!optionalQuestionMark && {}) || { required: true }),
-        ...((!!relationArguments && {
-          options: { relation: relationArguments },
-        }) ||
-          {}),
+        ...((!!isOptional && {}) || { required: true }),
+        ...((!!relationArguments && { relation: relationArguments }) || {}),
+        options: this.#processOptions({
+          hidden: !!isHidden,
+          identifier: identifierArguments || undefined,
+        }),
       } as Property;
     }),
 
@@ -215,9 +262,10 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         relationArguments &&
         !this.RECORDING_PHASE
       ) {
-        throw new Error(
-          `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`
-        );
+        throw new SchemaError({
+          cause: "Invalid relation arguments",
+          message: `Invalid relation arguments\n Expected relation type\n Got: ${attribute.type}`,
+        });
       }
 
       return {
@@ -241,7 +289,31 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         { ALT: () => this.SUBRULE(this.rules.timeAttribute) },
         { ALT: () => this.SUBRULE(this.rules.enumAttribute) },
         { ALT: () => this.SUBRULE(this.rules.relationAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.booleanAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.timestampAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.localdatetimeAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.localtimeAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.pointAttribute) },
+        { ALT: () => this.SUBRULE(this.rules.UUIDAttribute) },
       ]);
+    }),
+
+    pointAttribute: this.RULE("pointAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.PointReserved);
+
+      return { type: "point" as PropertyTypes };
+    }),
+
+    localdatetimeAttribute: this.RULE("localdatetimeAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.LocalDatetimeReserved);
+
+      return { type: "localdatetime" as PropertyTypes };
+    }),
+
+    localtimeAttribute: this.RULE("localtimeAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.LocalTimeReserved);
+
+      return { type: "localtime" as PropertyTypes };
     }),
 
     timestampAttribute: this.RULE("timestampAttribute", () => {
@@ -290,6 +362,12 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       this.CONSUME(SchemaTokenizer.namedTokens.TimeReserved);
 
       return { type: "time" as PropertyTypes };
+    }),
+
+    UUIDAttribute: this.RULE("UUIDAttribute", () => {
+      this.CONSUME(SchemaTokenizer.namedTokens.UUIDReserved);
+
+      return { type: "UUID" as PropertyTypes };
     }),
 
     enumAttribute: this.RULE("enumAttribute", () => {
@@ -349,6 +427,78 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       return { type: "relation" as PropertyTypes, node: identifier.image };
     }),
 
+    hiddenProperty: this.RULE("hiddenProperty", () => {
+      // @hidden
+      this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
+      this.CONSUME(SchemaTokenizer.namedTokens.HiddenReserved);
+
+      return true;
+    }),
+
+    identifierArgs: this.RULE("identifierArgs", () => {
+      // @identifier(auto: true) | @identifier | @identifier()
+      let args: Record<string, any> = {};
+
+      this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
+      this.CONSUME(SchemaTokenizer.namedTokens.IdentifierReserved);
+      this.OPTION(() => {
+        this.CONSUME(SchemaTokenizer.namedTokens.OpeningParenthesis);
+        this.OPTION1(() => {
+          args = this.SUBRULE(this.rules.identifierArgsList);
+        });
+        this.CONSUME(SchemaTokenizer.namedTokens.ClosingParenthesis);
+      });
+
+      if (!this.RECORDING_PHASE) {
+        args = {
+          auto: args["auto"] === "true",
+        };
+      }
+
+      return args;
+    }),
+
+    identifierArgsList: this.RULE("identifierArgsList", () => {
+      const args: { [key: string]: string } = {};
+
+      this.MANY_SEP({
+        SEP: SchemaTokenizer.namedTokens.Comma,
+        DEF: () => {
+          const argument: { name: string; value: string } = this.SUBRULE(
+            this.rules.identifierArg
+          );
+
+          args[argument.name] = argument.value;
+        },
+      });
+
+      return args;
+    }),
+
+    identifierArg: this.RULE("identifierArg", () => {
+      const parameter = this.CONSUME(
+        SchemaTokenizer.namedTokens.Identifier
+      ).image;
+
+      if (
+        !SchemaTokenizer.identifierParams.includes(parameter) &&
+        !this.RECORDING_PHASE
+      ) {
+        throw new SchemaError({
+          cause: "Invalid identifier argument",
+          message: `Invalid identifier argument\n Expected one of: ${SchemaTokenizer.identifierParams.join(
+            ", "
+          )}\n Got: ${parameter}`,
+        });
+      }
+
+      this.CONSUME(SchemaTokenizer.namedTokens.Colon);
+
+      const value = this.CONSUME(SchemaTokenizer.namedTokens.BooleanLiteral);
+
+      return { name: parameter, value: value.image };
+    }),
+
     relationArgs: this.RULE("relationArgs", () => {
       // @relation(name: "name", direction: "IN")
       this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
@@ -375,6 +525,9 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         },
       });
 
+      if (args["direction"] === undefined && !this.RECORDING_PHASE)
+        args["direction"] = "BOTH";
+
       return args;
     }),
 
@@ -386,11 +539,12 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         !SchemaTokenizer.relationParams.includes(parameter) &&
         !this.RECORDING_PHASE
       ) {
-        throw new Error(
-          `Invalid relation argument\n Expected one of: ${SchemaTokenizer.relationParams.join(
+        throw new SchemaError({
+          cause: "Invalid relation argument",
+          message: `Invalid relation argument\n Expected one of: ${SchemaTokenizer.relationParams.join(
             ", "
-          )}\n Got: ${parameter}`
-        );
+          )}\n Got: ${parameter}`,
+        });
       }
 
       this.CONSUME(SchemaTokenizer.namedTokens.Colon);
@@ -439,14 +593,20 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
 
   parse() {
     if (this.input.length === 0) {
-      throw new Error("No input provided");
+      throw new SchemaError({
+        cause: "Empty schema",
+        message: "Empty schema, check the file",
+      });
     }
 
     // @ts-expect-error
     const schema: Schema | undefined = this.schemaParser();
 
     if (!schema || this.errors.length > 0) {
-      throw new Error(`Invalid schema, check the errors above\n${this.errors}`);
+      throw new SchemaError({
+        cause: "Invalid schema",
+        message: `Invalid schema, check the errors above\n${this.errors}`,
+      });
     }
 
     if (this.#config?.debug && this.#config.outputPath) {
@@ -465,6 +625,22 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
     }
 
     this.#schema = schema;
+  }
+
+  #processOptions(options: {
+    hidden: boolean;
+    identifier?: Property["options"]["identifier"];
+  }): Property["options"] {
+    const { hidden, identifier } = options;
+
+    const formattedIdentifier: Property["options"]["identifier"] = {
+      auto: identifier ? identifier["auto"] : false,
+    };
+
+    return {
+      hidden: !!hidden,
+      identifier: formattedIdentifier || undefined,
+    };
   }
 
   get schema(): Schema | null {

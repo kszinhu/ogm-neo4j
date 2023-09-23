@@ -34,8 +34,11 @@ describe("Tokenizer", () => {
     expect(Tokenizer.tokenizedSchema[2]).to.have.property("image", "{");
     expect(Tokenizer.tokenizedSchema[3]).to.have.property("image", "id");
     expect(Tokenizer.tokenizedSchema[4]).to.have.property("image", ":");
-    expect(Tokenizer.tokenizedSchema[5]).to.have.property("image", "String");
-    expect(Tokenizer.tokenizedSchema[46]).to.have.property("image", "@");
-    expect(Tokenizer.tokenizedSchema[47]).to.have.property("image", "relation");
+    expect(Tokenizer.tokenizedSchema[5]).to.have.property("image", "UUID");
+    expect(Tokenizer.tokenizedSchema[6]).to.have.property("image", "@");
+    expect(Tokenizer.tokenizedSchema[7]).to.have.property(
+      "image",
+      "identifier"
+    );
   });
 });
