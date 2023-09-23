@@ -142,6 +142,14 @@ export default class Database {
     return neo4j.auth.basic(username, password);
   }
 
+  #isLocalhost() {
+    const { host } = this.#configurations;
+
+    const hostNames = ["localhost", "127.0.0.1", "[::1]"];
+
+    return hostNames.includes(host);
+  }
+
   /**
    * Set the database configuration for tests.
    */
@@ -229,6 +237,8 @@ export default class Database {
    * Build the connection string
    */
   async #buildConnectionString(): Promise<void> {
+    if (this.#isLocalhost()) return;
+
     // resolve DNS to get the IP address
     const address = await this.#resolveDNS();
 

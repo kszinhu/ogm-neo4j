@@ -40,6 +40,7 @@ class SchemaTokenizer {
       createToken({ name: "DirectionINReserved", pattern: /in/ }),
       createToken({ name: "DirectionOUTReserved", pattern: /out/ }),
       createToken({ name: "DirectionBOTHReserved", pattern: /both/ }),
+      createToken({ name: "HiddenReserved", pattern: /hidden/ }),
     ],
     constants: [
       // UUIDv4

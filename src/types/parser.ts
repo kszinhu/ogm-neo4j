@@ -22,6 +22,15 @@ export enum IdentifierArgs {
   auto = "auto",
 }
 
+interface IdentifierArgsList {
+  auto?: boolean;
+}
+
+interface RelationArgsList {
+  name?: string;
+  direction?: DirectionTypes;
+}
+
 export interface ParserRules extends AttributesRules {
   schemaParser: ParserMethod<[], SchemaOfApplication>;
   nodeDeclaration: ParserMethod<[], NodeApp>;
@@ -32,10 +41,12 @@ export interface ParserRules extends AttributesRules {
   relationProperty: ParserMethod<[], Property>;
   attribute: ParserMethod<[], { type: PropertyTypes; values?: string[] }>;
   enumValues: ParserMethod<[], string[]>;
+  // @hidden
+  hiddenProperty: ParserMethod<[], boolean>;
   // @identifier | @identifier(auto: true)
-  identifierArgsList: ParserMethod<[], { [key: string]: string }>;
-  identifierArgs: ParserMethod<[], { [key: string]: string }>;
-  identifierArg: ParserMethod<[], { name: string; value: string }>;
+  identifierArgsList: ParserMethod<[], { [key: string]: any }>;
+  identifierArgs: ParserMethod<[], { [key: string]: any }>;
+  identifierArg: ParserMethod<[], { name: string; value: string}>;
   // @relation(name: "name", direction: "OUT")
   relationArgsList: ParserMethod<[], { [key: string]: string }>;
   relationArgs: ParserMethod<[], { [key: string]: string }>;
@@ -55,10 +66,11 @@ export interface Property {
   multiple?: boolean;
   values?: string[]; // for enum
   default?: any;
-  relation?: { name?: string; direction?: DirectionTypes };
-  options?:
-    | { relation: { name?: string; direction?: DirectionTypes } }
-    | { identifier: { auto?: boolean } };
+  relation?: { name?: string; direction?: DirectionTypes }; // TODO: format property
+  options: {
+    hidden: boolean;
+    identifier?: IdentifierArgsList;
+  };
 }
 
 export interface RelationApp {

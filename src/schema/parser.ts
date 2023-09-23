@@ -153,11 +153,12 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
     }),
 
     nodeProperty: this.RULE("nodeProperty", () => {
-      let relationArguments: Record<string, any> | undefined = undefined,
-        identifierArguments: Record<string, any> | undefined = undefined,
+      let relationArguments: Record<string, any> | null = null,
+        identifierArguments: Property["options"]["identifier"] | null = null,
         openingBracket: string | null = null,
         closingBracket: string | null = null,
-        optionalQuestionMark: string | null = null;
+        isOptional: boolean | null = null,
+        isHidden: boolean | null = null;
 
       this.OPTION1(() => {
         openingBracket = this.CONSUME1(
@@ -175,7 +176,7 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       });
 
       this.OPTION3(() => {
-        optionalQuestionMark = this.CONSUME2(
+        isOptional = !!this.CONSUME2(
           SchemaTokenizer.namedTokens.OptionalOperator
         ).image;
       });
@@ -185,6 +186,9 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       });
       this.OPTION5(() => {
         identifierArguments = this.SUBRULE(this.rules.identifierArgs);
+      });
+      this.OPTION6(() => {
+        isHidden = this.SUBRULE(this.rules.hiddenProperty);
       });
 
       if (
@@ -211,23 +215,14 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
 
       return {
         ...attribute,
+        primaryKey: identifierArguments !== null,
         ...((!!openingBracket && !!closingBracket && { multiple: true }) || {}),
-        ...((!!optionalQuestionMark && {}) || { required: true }),
-        ...((!!relationArguments && {
-          options: { relation: relationArguments },
-        }) ||
-          {}),
-        ...((!!identifierArguments && {
-          primaryKey: true,
-          options: {
-            identifier: {
-              ...(identifierArguments as Record<string, any>),
-              auto:
-                attribute.type === "UUID" ||
-                (identifierArguments as Record<string, any>)?.auto,
-            },
-          },
-        }) || { primaryKey: false }),
+        ...((!!isOptional && {}) || { required: true }),
+        ...((!!relationArguments && { relation: relationArguments }) || {}),
+        options: this.#processOptions({
+          hidden: !!isHidden,
+          identifier: identifierArguments || undefined,
+        }),
       } as Property;
     }),
 
@@ -432,9 +427,17 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
       return { type: "relation" as PropertyTypes, node: identifier.image };
     }),
 
+    hiddenProperty: this.RULE("hiddenProperty", () => {
+      // @hidden
+      this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
+      this.CONSUME(SchemaTokenizer.namedTokens.HiddenReserved);
+
+      return true;
+    }),
+
     identifierArgs: this.RULE("identifierArgs", () => {
       // @identifier(auto: true) | @identifier | @identifier()
-      let args: { [key: string]: string } = {};
+      let args: Record<string, any> = {};
 
       this.CONSUME(SchemaTokenizer.namedTokens.FunctionOperator);
       this.CONSUME(SchemaTokenizer.namedTokens.IdentifierReserved);
@@ -446,8 +449,11 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
         this.CONSUME(SchemaTokenizer.namedTokens.ClosingParenthesis);
       });
 
-      if (args["auto"] === undefined && !this.RECORDING_PHASE)
-        args["auto"] = "false";
+      if (!this.RECORDING_PHASE) {
+        args = {
+          auto: args["auto"] === "true",
+        };
+      }
 
       return args;
     }),
@@ -619,6 +625,22 @@ class SchemaParser extends EmbeddedActionsParser implements SchemaAppParser {
     }
 
     this.#schema = schema;
+  }
+
+  #processOptions(options: {
+    hidden: boolean;
+    identifier?: Property["options"]["identifier"];
+  }): Property["options"] {
+    const { hidden, identifier } = options;
+
+    const formattedIdentifier: Property["options"]["identifier"] = {
+      auto: identifier ? identifier["auto"] : false,
+    };
+
+    return {
+      hidden: !!hidden,
+      identifier: formattedIdentifier || undefined,
+    };
   }
 
   get schema(): Schema | null {

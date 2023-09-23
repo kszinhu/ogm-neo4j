@@ -70,7 +70,7 @@ class Formatter<Schema extends Record<string, any>> {
       const { identity, labels, properties } = entity[alias] as {
         identity: number;
         labels: string[];
-        properties: any;
+        properties: Record<string, any>;
       };
 
       if (!labels || !properties)
@@ -84,12 +84,21 @@ class Formatter<Schema extends Record<string, any>> {
         throw new EntityError({ cause: "Unsupported label", message: "" });
       }
 
-      // TODO: hidden properties
+      const publicProperties: Record<string, any> = Object.keys(
+        properties
+      ).reduce(
+        (acc, curr) =>
+          this.#schema[curr].hidden
+            ? acc
+            : { ...acc, [curr]: properties[curr] },
+        {}
+      );
+
       return acc.set(
         this.#model.primaryKey
           ? properties[this.#model.primaryKey]
           : identity.toString(),
-        properties
+        publicProperties
       );
     }, formattedResult);
 

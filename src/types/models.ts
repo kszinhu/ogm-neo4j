@@ -84,6 +84,7 @@ export type ProvidedPropertySchema = {
   primaryKey?: boolean;
   readonly?: boolean;
   unique?: boolean;
+  hidden?: boolean;
   required?: boolean;
   defaultValue?: any;
   multiple?: boolean;
@@ -108,6 +109,7 @@ export type IdentifierPropertySchema = {
   unique: true;
   primaryKey: true;
   required: true;
+  hidden: boolean;
   defaultValue?: never;
   multiple?: never;
   type: Exclude<
