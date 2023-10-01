@@ -154,9 +154,7 @@ export default class Database {
    * Set the database configuration for tests.
    */
   #setTestConfiguration() {
-    const { host } = this.#configurations;
-
-    if (host !== "localhost" && host !== "127.0.0.1" && host !== "0.0.0.0") {
+    if (!this.#isLocalhost()) {
       consoleMessage({
         message:
           "[OGM] You are trying to run tests on a remote database. This is not recommended.",
@@ -227,6 +225,8 @@ export default class Database {
     return new Promise((resolve, reject) => {
       dnsResolver(host, (error, address) => {
         if (error) reject(error);
+        if (!address || !address.length)
+          reject(`[OGM] Error resolving DNS for ${host}`);
 
         resolve(address[0]);
       });
@@ -238,6 +238,11 @@ export default class Database {
    */
   async #buildConnectionString(): Promise<void> {
     if (this.#isLocalhost()) return;
+
+    consoleMessage({
+      message: "[OGM] Resolving DNS to get the IP address",
+      type: "info",
+    });
 
     // resolve DNS to get the IP address
     const address = await this.#resolveDNS();
