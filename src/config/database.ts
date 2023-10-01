@@ -211,6 +211,8 @@ export default class Database {
       type: "info",
     });
 
+    console.log(this.connectionString);
+
     this.#driver = neo4j.driver(this.connectionString, token, config);
 
     await this.#verifyConnection();
@@ -224,9 +226,16 @@ export default class Database {
 
     return new Promise((resolve, reject) => {
       dnsResolver(host, (error, address) => {
-        if (error) reject(error);
-        if (!address || !address.length)
+        if (error) {
+          reject(error);
+          return;
+        }
+        if (!address || !address.length) {
           reject(`[OGM] Error resolving DNS for ${host}`);
+          return;
+        }
+
+        console.log(!address);
 
         resolve(address[0]);
       });
@@ -244,10 +253,16 @@ export default class Database {
       type: "info",
     });
 
-    // resolve DNS to get the IP address
-    const address = await this.#resolveDNS();
-
-    this.#configurations.host = address;
+    try {
+      // resolve DNS to get the IP address
+      this.#configurations.host = await this.#resolveDNS();
+    } catch (error) {
+      consoleMessage({
+        message: `[OGM] Error resolving DNS\n ${error}`,
+        type: "error",
+        exit: true,
+      });
+    }
   }
 
   /**

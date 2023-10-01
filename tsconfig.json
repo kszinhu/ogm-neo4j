@@ -36,7 +36,8 @@
         "exclude": ["**/node_modules/**"],
         "afterDeclarations": true
       }
-    ]
+    ],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]
